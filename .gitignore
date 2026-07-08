@@ -1,0 +1,17 @@
+logs/*.log
+
+state/*.json
+
+.env
+
+*.swp
+
+*.tmp
+
+*.bak
+
+.vscode/
+
+.idea/
+
+.DS_Store
