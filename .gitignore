@@ -2,6 +2,8 @@ logs/*.log
 
 state/*.json
 
+tests/tmp/
+
 .env
 
 *.swp
