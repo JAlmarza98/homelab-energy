@@ -2,7 +2,9 @@
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-CONFIG_DIR="${PROJECT_ROOT}/config"
+CONFIG_DIR="${CONFIG_DIR:-${PROJECT_ROOT}/config}"
+
+DEFAULTS_CONFIG="${CONFIG_DIR}/defaults.conf"
 
 ENERGY_CONFIG="${CONFIG_DIR}/energy.conf"
 
@@ -40,23 +42,83 @@ _config_parse_file() {
 
 }
 
+_config_require_int() {
+
+    local key="$1"
+    local value="${!key-}"
+
+    [[ "${value}" =~ ^[0-9]+$ ]] || {
+        echo "Invalid config: ${key} must be an integer (got '${value}')" >&2
+        exit 1
+    }
+
+}
+
+_config_require_bool() {
+
+    local key="$1"
+    local value="${!key-}"
+
+    case "${value}" in
+    true | false) ;;
+    *)
+        echo "Invalid config: ${key} must be true or false (got '${value}')" >&2
+        exit 1
+        ;;
+    esac
+
+}
+
+_config_validate() {
+
+    _config_require_int SHUTDOWN_DELAY
+
+    _config_require_bool PROXMOX_ENABLED
+    _config_require_bool NAS_ENABLED
+    _config_require_bool NOTIFICATIONS_ENABLED
+    _config_require_bool PROMETHEUS_ENABLED
+
+}
+
 ################################################################################
 # Public API
 ################################################################################
 
 load_config() {
 
-    [[ -f "${ENERGY_CONFIG}" ]] || {
-        echo "Missing energy.conf"
+    [[ -f "${DEFAULTS_CONFIG}" ]] || {
+        echo "Missing defaults.conf" >&2
         exit 1
     }
 
-    [[ -f "${HOSTS_CONFIG}" ]] || {
-        echo "Missing host config: ${HOSTS_CONFIG}"
-        exit 1
-    }
+    _config_parse_file "${DEFAULTS_CONFIG}"
 
-    _config_parse_file "${ENERGY_CONFIG}"
-    _config_parse_file "${HOSTS_CONFIG}"
+    [[ -f "${ENERGY_CONFIG}" ]] && _config_parse_file "${ENERGY_CONFIG}"
+
+    [[ -f "${HOSTS_CONFIG}" ]] && _config_parse_file "${HOSTS_CONFIG}"
+
+    _config_validate
+
+}
+
+reload_config() {
+
+    load_config
+
+}
+
+config_get() {
+
+    local key="$1"
+
+    printf '%s' "${!key-}"
+
+}
+
+config_exists() {
+
+    local key="$1"
+
+    [[ -n "${!key+x}" ]]
 
 }

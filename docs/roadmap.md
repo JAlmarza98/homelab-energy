@@ -15,15 +15,15 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 ## Current version
 
 ```text
-0.1.1-dev
+0.2.0-dev
 ```
 
 ## Milestones
 
 | Version | Goal |
 |---|---|
-| v0.1.1 | Cleanup: fix the known bugs below, CI running `make check` in full |
-| v0.2.0 | `bootstrap.sh` + `config.sh` (parser, layers, int/bool validation, clear errors) + configurable logger |
+| v0.1.1 | ✅ Cleanup: fix the known bugs below, CI running `make check` in full |
+| v0.2.0 | ✅ `bootstrap.sh` + `config.sh` (parser, layers, int/bool validation, clear errors) + configurable logger |
 | v0.3.0 | `notify.sh` (one provider first; secrets out of Git) + `nut.sh` (`upsc` wrapper, read-only) |
 | v0.4.0 | `bin/homelab-energy event` wired to `upssched` → **first production use: power loss/restore/low battery alerts** |
 | v0.5.0 | `state.sh`: JSON via `jq`, atomic writes (tmp + `mv`), locking with `flock` |
@@ -42,6 +42,17 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 6. ~~`lib/logger.sh`: `LOGGER_FILE_PATH` was relative; `LOG_LEVEL` name wasn't mapped to a numeric level.~~
 7. ~~`lib/config.sh` sourced the `.conf` files and used `hosts.conf` instead of `hosts/<hostname>.conf`.~~
 8. ~~`docs/roadmap.md` was stale; `docs/coding-standarts.md` → `coding-standards.md`.~~
+
+## v0.2.0 delivered
+
+* `lib/bootstrap.sh`: the only module allowed to `set -Eeuo pipefail` and source
+  other libraries (`utils.sh`, `logger.sh`, `config.sh`). Exposes `bootstrap`.
+* `lib/config.sh`: layered loading (`config/defaults.conf` required →
+  `config/energy.conf` optional → `config/hosts/<hostname>.conf` optional),
+  `config_get`/`config_exists`/`reload_config`, and int/bool validation with
+  clear errors instead of silent `source`.
+* `lib/logger.sh`: `logger_set_level` maps a config `LOG_LEVEL` name to the
+  numeric level `bootstrap` wires in automatically.
 
 ## Definition of done
 

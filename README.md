@@ -10,6 +10,8 @@ The project is designed around simplicity, reliability and maintainability, with
 
 Current implementation:
 
+* Bootstrap framework
+* Layered configuration (`defaults.conf` → `energy.conf` → `hosts/<hostname>.conf`)
 * Modular logging framework
 * Lightweight testing framework
 * Development tooling (ShellCheck, shfmt, Make)
@@ -18,7 +20,6 @@ Current implementation:
 
 Planned features:
 
-* Configuration management
 * UPS monitoring (Network UPS Tools)
 * Persistent state management
 * Proxmox integration
@@ -109,8 +110,6 @@ The project follows a few core principles.
 
 The next milestones are:
 
-* Bootstrap framework
-* Configuration module
 * State management
 * NUT integration
 * Energy monitoring service

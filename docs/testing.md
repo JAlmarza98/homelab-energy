@@ -27,7 +27,8 @@ tests/
 │   └── handlers_test.sh
 │
 ├── utils_test.sh
-├── config_test.sh          # Future
+├── config_test.sh
+├── bootstrap_test.sh
 ├── state_test.sh           # Future
 └── nut_test.sh             # Future
 ```
