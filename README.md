@@ -37,14 +37,15 @@ Planned features:
 
 ```text
 .
-├── bin/
-├── config/
+├── bin/            entry points (homelab-energy, homelab-energy-cmdscript)
+├── config/         defaults.conf, energy.conf, hosts/, secrets.env.example
 ├── docs/
-├── lib/
-├── logs/
-├── services/
-├── state/
-├── templates/
+├── lib/            modules sourced via bootstrap.sh
+├── logs/           created on demand by logger.sh (LOGGER_HANDLER_FILE); gitignored
+├── services/       reserved for real systemd units, once something installs them;
+│                   deployment *examples* live in templates/ instead, for now
+├── state/          created on demand by state.sh (state.json, state.lock); gitignored
+├── templates/      deployment examples (upssched.conf, nut_exporter, Prometheus/Grafana) — never applied automatically
 └── tests/
 ```
 
@@ -84,16 +85,40 @@ make check
 
 ---
 
+# Usage
+
+```bash
+# Called by upssched as CMDSCRIPT (see templates/upssched.conf.example) —
+# not normally run by hand, but safe to:
+bin/homelab-energy event ONBATT    # power lost: logs + notifies
+bin/homelab-energy event ONLINE    # power restored
+bin/homelab-energy event LOWBATT   # battery critically low
+```
+
+Every call logs, notifies (if `NOTIFICATIONS_ENABLED=true` and a real
+`NTFY_TOPIC` are configured), records the event in `state/state.json`, and
+exports metrics to `METRICS_FILE` for Prometheus. See `docs/api.md` for
+the full `bin/homelab-energy` contract and every module's public API.
+
+---
+
 # Documentation
 
 Additional documentation can be found in the `docs/` directory.
 
-Current documents include:
+Current documents:
 
-* `ARCHITECTURE.md`
-* `TESTING.md`
-* `ROADMAP.md`
-* `RUNBOOK.md` — the real power-cut test procedure
+* [`docs/architecture.md`](docs/architecture.md) — design principles, module
+  layout, platform compatibility (macOS vs. Raspberry Pi)
+* [`docs/api.md`](docs/api.md) — every module's public functions, config
+  keys, and env-var overrides
+* [`docs/coding-standards.md`](docs/coding-standards.md) — naming, file
+  structure, error handling conventions
+* [`docs/testing.md`](docs/testing.md) — test strategy, isolation patterns,
+  per-module test breakdown
+* [`docs/roadmap.md`](docs/roadmap.md) — milestone-by-milestone status,
+  what shipped and why
+* [`docs/runbook.md`](docs/runbook.md) — the real power-cut test procedure
 
 ---
 
@@ -141,9 +166,16 @@ Kept to the minimum needed by the modules that actually use them.
 
 # Current Status
 
-The project is under active development.
+The core framework (bootstrap, layered config, logging, NUT reads,
+notifications, persistent state, a generic shutdown engine, and
+Prometheus metrics) is implemented and tested, but **not yet installed
+on real hardware** — see `docs/roadmap.md` for the exact milestone
+breakdown of what's done in the repo versus what's still a manual
+deployment step on RP-node1/RP-node2.
 
-The current focus is building a robust and reusable framework that will support the monitoring and automation features planned for future releases.
+NAS integration is blocked until a real NAS exists in the topology, and
+the real power-cut test (`docs/runbook.md`) is a physical action that
+hasn't been run yet.
 
 ---
 

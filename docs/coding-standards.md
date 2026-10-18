@@ -62,6 +62,16 @@ The project always uses Bash.
 
 Do not use `/bin/sh`.
 
+**"Executable script" excludes library modules.** `lib/*.sh` files
+(except `bootstrap.sh`) are sourced, never executed directly, and must
+**not** set `set -Eeuo pipefail` or source another library — only
+`lib/bootstrap.sh` and the real executables (`bin/*`, `tests/*_test.sh`)
+do that. A library that sets it anyway was v0.1.1 bug #5: sourcing two
+such libraries into the same shell can silently change the calling
+script's error-handling behaviour out from under it. See
+`docs/architecture.md`'s Module Independence section for the full
+source order.
+
 ---
 
 # Module Responsibilities
@@ -324,11 +334,18 @@ Good:
 UPS_NAME
 ```
 
-loaded from:
+loaded through `load_config`/`config_get`, from layered files (later
+overrides earlier):
 
 ```text
-config/energy.conf
+config/defaults.conf              (required; safe baseline)
+config/energy.conf                (this site's real values)
+config/hosts/<hostname>.conf      (per-host overrides)
+.env  or  /etc/homelab-energy/secrets.env   (secrets; chmod 600 enforced)
 ```
+
+See `docs/api.md`'s `config.sh` section for the full key reference and
+why files are parsed, never `source`d.
 
 ---
 
@@ -354,15 +371,23 @@ This guarantees a single source of truth.
 
 # Dependencies
 
-Dependencies must be validated during startup.
+Dependencies must be validated before the code that needs them runs —
+not necessarily centrally at startup; a check right at the point of use
+(e.g. `state.sh`'s `_state_require_jq`) is preferred over a single
+upfront module when most runs don't need most dependencies. See
+`docs/api.md`'s "dependencies.sh — superseded" section for why.
 
 Examples:
 
-* jq
-* upsc
-* curl
+* `jq`, `flock` — `state.sh`
+* `upsc` — `nut.sh`
+* `curl` — `notify.sh`
 
-Do not assume external commands exist.
+Do not assume external commands exist. Do not assume a GNU-only flag
+exists either — development happens on macOS, where the default `date`,
+`stat` and `timeout` differ from Raspberry Pi's. See
+`docs/architecture.md`'s "Platform Compatibility" section before adding
+a new one.
 
 ---
 
@@ -433,10 +458,25 @@ logger.sh
 
 ↓
 
-tests/test-logger.sh
+tests/logger/api_test.sh
+tests/logger/handlers_test.sh
+
+state.sh
+
+↓
+
+tests/state_test.sh
 ```
 
-Tests should be executable independently.
+A module gets its own `tests/<module>/` subdirectory only once a single
+flat `tests/<module>_test.sh` would mix unrelated responsibilities
+(`logger.sh` is the current example); otherwise one flat file per
+module is the default. See `docs/testing.md` for the full current list.
+
+Tests should be executable independently, and must never touch real
+hardware, the real `config/`/`state/` directories, or the network — see
+`docs/testing.md`'s isolation patterns (stubbed `PATH`, overridden
+`CONFIG_DIR`/`STATE_DIR`/`METRICS_FILE`).
 
 ---
 

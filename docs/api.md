@@ -100,6 +100,8 @@ log_success MESSAGE
 log_warn MESSAGE
 
 log_error MESSAGE
+
+logger_set_level NAME
 ```
 
 ### Behaviour
@@ -108,6 +110,36 @@ log_error MESSAGE
 * Adds log level.
 * Writes to configured outputs.
 * Honors configured log level.
+* `logger_set_level NAME` maps a level name (`DEBUG`/`INFO`/`SUCCESS`/`WARN`/
+  `ERROR`) to `LOGGER_LEVEL`'s numeric value; returns 1 and logs nothing on
+  an unknown name. `bootstrap()` calls this with `config_get LOG_LEVEL`, so
+  `LOG_LEVEL` in `energy.conf` drives it end to end.
+
+### Levels
+
+| Name | Numeric value |
+|---|---|
+| `DEBUG` | 10 |
+| `INFO` | 20 |
+| `SUCCESS` | 25 |
+| `WARN` | 30 |
+| `ERROR` | 40 |
+
+A record is emitted only when its level is `>= LOGGER_LEVEL`.
+
+### Handlers
+
+Three handler toggles, each a plain `true`/`false` variable (not yet wired
+to `config/*.conf` — set directly before calling a `log_*` function, or add
+the wiring when a real need for file/journald logging shows up):
+
+| Variable | Default | Effect |
+|---|---|---|
+| `LOGGER_HANDLER_CONSOLE` | `true` | Colored output to stdout. |
+| `LOGGER_HANDLER_FILE` | `false` | Plain (no ANSI) append to `LOGGER_FILE_PATH`. |
+| `LOGGER_HANDLER_JOURNALD` | `false` | Not implemented yet (`_logger_journald` is a stub); reserved for `systemd-cat`. |
+
+`LOGGER_FILE_PATH` defaults to `${PROJECT_ROOT}/logs/energy.log`.
 
 ---
 
@@ -134,6 +166,65 @@ config_exists VARIABLE
 Configuration files are loaded only through this module.
 
 Other modules should never source configuration files directly.
+
+* Files are **parsed** (`CLAVE=valor`, comments and blank lines skipped,
+  key validated against `^[A-Za-z_][A-Za-z0-9_]*$`), never `source`d — a
+  config file cannot execute arbitrary shell code.
+* `config_get`/`config_exists` use bash's indirect expansion (`${!key}`)
+  against whatever `load_config` last assigned as plain global variables —
+  there is no separate associative array (keeps `printf -v` dynamic
+  assignment, which works on bash 3.2 too; `declare -A` would not).
+* `reload_config` is just `load_config` again: layers are re-parsed and
+  later ones overwrite earlier ones, so a key removed from a later layer
+  keeps whatever an earlier layer set (there is no "unset" between reloads).
+
+### Layers (in order, later overrides earlier)
+
+| # | File | Required? | Purpose |
+|---|---|---|---|
+| 1 | `config/defaults.conf` | **Yes** — `load_config` exits 1 if missing | Safe baseline for every deployment. |
+| 2 | `config/energy.conf` | No | This site's real values. |
+| 3 | `config/hosts/$(hostname).conf` | No | Per-host overrides (IPs, NUT server). `hostname` must match exactly — RP-node2's file is `config/hosts/RP-node2.conf` (capitalised, per `CLAUDE.md`'s topology). |
+| 4 | `${PROJECT_ROOT}/.env` (local) | No | Dev-only secrets, gitignored. |
+| 5 | `/etc/homelab-energy/secrets.env` (production) | No | Real secrets. Both this and layer 4, if present, must be `chmod 600` (group/world-unreadable) or `load_config` refuses to load them and exits 1. |
+
+After all layers, `_config_validate` enforces `SHUTDOWN_DELAY` is an
+integer and `PROXMOX_ENABLED`/`NAS_ENABLED`/`NOTIFICATIONS_ENABLED`/
+`PROMETHEUS_ENABLED` are each exactly `true` or `false` — `load_config`
+exits 1 with a clear message otherwise.
+
+`CONFIG_DIR`, `SECRETS_CONFIG_LOCAL` and `SECRETS_CONFIG_SYSTEM` are
+themselves overridable via environment variable (set before sourcing
+`config.sh`) — this is how tests point `load_config` at a throwaway
+directory instead of the real `config/`.
+
+### Config keys reference
+
+Keys actually read from `config/*.conf` / secrets files:
+
+| Key | First set in | Type | Default | Consumed by | Status |
+|---|---|---|---|---|---|
+| `PROJECT_NAME` | `defaults.conf` | string | `homelab-energy` | `notify.sh` (ntfy `Title` header) | active |
+| `UPS_NAME` | `defaults.conf` | string | `ups` | `nut.sh` (`upsc` target) | active |
+| `SHUTDOWN_DELAY` | `defaults.conf` | int | `60` | — | reserved — `shutdown.sh`'s `shutdown_execute` takes its timeout as a function argument instead; nothing reads this yet |
+| `LOG_LEVEL` | `defaults.conf` | `DEBUG`\|`INFO`\|`SUCCESS`\|`WARN`\|`ERROR` | `WARN` | `bootstrap()` → `logger_set_level` | active |
+| `PROXMOX_ENABLED` | `defaults.conf` | bool | `false` | — | reserved for future Proxmox integration |
+| `NAS_ENABLED` | `defaults.conf` | bool | `false` | — | reserved; blocked until a real NAS exists (v0.8.0) |
+| `NOTIFICATIONS_ENABLED` | `defaults.conf` | bool | `false` | `notify.sh` | active |
+| `PROMETHEUS_ENABLED` | `defaults.conf` | bool | `false` | — | reserved — `metrics.sh` currently always exports regardless of this flag |
+| `PROXMOX_IP` | `hosts/<hostname>.conf` | string | (unset) | — | reserved for future Proxmox integration |
+| `NAS_IP` | `hosts/<hostname>.conf` | string | (unset) | — | reserved; blocked (v0.8.0) |
+| `NUT_SERVER` | `hosts/<hostname>.conf` | string | `localhost` (fallback inside `nut.sh`, not a config default) | `nut.sh` (`upsc` target) | active |
+| `NTFY_URL` | secrets | string | `https://ntfy.sh` (fallback inside `notify.sh`) | `notify.sh` | active, secret |
+| `NTFY_TOPIC` | secrets | string | (unset — notifications silently skip without it) | `notify.sh` | active, secret |
+| `NTFY_TOKEN` | secrets | string | (unset — optional `Authorization: Bearer` header) | `notify.sh` | active, secret |
+
+Environment-only overrides (never read from a `.conf` file — set as an
+actual environment variable, mainly for tests or an unusual deployment):
+`CONFIG_DIR`, `SECRETS_CONFIG_LOCAL`, `SECRETS_CONFIG_SYSTEM` (`config.sh`),
+`STATE_DIR`, `STATE_LOCK_WAIT` (`state.sh`), `METRICS_FILE` (`metrics.sh`),
+`SHUTDOWN_DRY_RUN` (`shutdown.sh`), `LOGGER_HANDLER_CONSOLE`/`_FILE`/
+`_JOURNALD`, `LOGGER_FILE_PATH` (`logger.sh`, see above).
 
 ---
 
@@ -174,6 +265,12 @@ No other module should modify state files directly.
   `state/state.lock` while they touch disk.
 * Requires `jq` and `flock`. Last-writer-wins: this does not merge concurrent
   changes, it only keeps a single write from corrupting the file.
+* The lock uses a **fixed** file descriptor (`STATE_LOCK_FD=200`, via
+  `eval "exec 200>…"`), not bash 4's `exec {fd}>…` auto-allocation —
+  macOS's default `/bin/bash` is 3.2, which doesn't have it.
+* `STATE_DIR` (default `${PROJECT_ROOT}/state`) and `STATE_LOCK_WAIT`
+  (default `5` seconds) are overridable environment variables, mainly for
+  test isolation.
 
 ---
 
@@ -181,56 +278,72 @@ No other module should modify state files directly.
 
 ## Purpose
 
-Provide reusable helper functions.
+Provide reusable, generic helper functions with no project-specific logic.
 
-## Planned Public API
+## Public API
 
 ```bash
-require_command COMMAND
+command_exists COMMAND
 
-require_file FILE
+require_command COMMAND...
 
-require_directory DIRECTORY
+file_exists FILE
 
-retry COMMAND
+directory_exists DIRECTORY
+
+ensure_directory DIRECTORY
 
 timestamp_now
 
-is_number VALUE
+timestamp_iso8601
 
-is_boolean VALUE
+timestamp_epoch
 ```
 
-Utilities should remain generic.
+### Behaviour
 
-Project-specific logic belongs elsewhere.
+* `command_exists`: `command -v` check, boolean return.
+* `require_command`: true only if every argument passed is a known
+  command (`bootstrap()` uses this: `require_command bash date mkdir
+  hostname`).
+* `file_exists`/`directory_exists`: thin `[[ -f/-d ]]` wrappers.
+* `ensure_directory`: `mkdir -p`.
+* `timestamp_now`: `date '+%Y-%m-%d %H:%M:%S'` (same format `logger.sh`
+  uses).
+* `timestamp_iso8601`: `date '+%Y-%m-%dT%H:%M:%S%z'` — deliberately **not**
+  GNU's `date --iso-8601=seconds`, which doesn't exist on macOS's BSD
+  `date` (this was v0.1.1 bug territory: `make test` silently never
+  reaching this assertion is what hid it).
+* `timestamp_epoch`: `date +%s`; used by `bin/homelab-energy` for
+  `metrics:last_event_at`.
+
+Utilities should remain generic. Project-specific logic (NUT, Proxmox,
+notifications, …) belongs in its own module, never here.
 
 ---
 
-# dependencies.sh
+# dependencies.sh — superseded
 
-## Purpose
+Originally planned as a single module validating `bash`/`jq`/`curl`/
+`upsc`/`systemctl` up front. What actually shipped instead is per-module,
+on-demand checks, closer to "fail at the point of use with a clear
+message" than "fail at startup for things that might not even be needed
+by this run":
 
-Validate required runtime dependencies.
+* `bootstrap()` (`bootstrap.sh`) checks `bash date mkdir hostname` — the
+  commands every run needs regardless of which subcommand runs.
+* `state.sh`'s `_state_require_jq` checks `jq` only when a `state_*`
+  function is actually called.
+* `notify.sh`'s `_notify_send` checks `curl` only when a notification is
+  actually about to be sent (and `NOTIFICATIONS_ENABLED` is checked first,
+  so a disabled install never needs `curl` at all).
+* `nut.sh` has no explicit check: `upsc` not existing surfaces as a
+  command-not-found failure from `_nut_query`, which every `nut_get_*`
+  caller already treats as "unreachable" (see `nut.sh` below).
 
-## Planned Public API
-
-```bash
-check_dependencies
-
-require_command COMMAND
-```
-
-### Planned Dependencies
-
-* bash
-* jq
-* curl
-* logger
-* upsc
-* systemctl
-
-Additional dependencies may be added as the project evolves.
+No `lib/dependencies.sh` file exists, and none is currently planned —
+revisit only if the per-module checks stop being clear enough in
+practice.
 
 ---
 
@@ -260,14 +373,29 @@ nut_get_load
 nut_get_status
 ```
 
-`nut_refresh_state` is deferred until `state.sh` exists (v0.5.0): there is
-nothing to refresh into yet.
+`nut_refresh_state` (periodically polling `upsc` and writing the readings
+into `state.sh`) still isn't implemented: `state.sh` exists since v0.5.0,
+but nothing in the current event-driven design (`upssched` → `bin/
+homelab-energy event`) needs a periodic poll — every call already has a
+fresh NUT-decided event to react to. Add it if a future consumer (e.g. a
+Prometheus scrape target wanting live `upsc` values rather than
+`nut_exporter`'s) actually needs cached/polled readings.
 
 ### Behaviour
 
 Wraps `upsc` only (read-only). Never calls `upscmd`, `upsdrvctl` or any
 command that could affect the UPS. Returns failure instead of guessing when
 the UPS is unreachable.
+
+* Target is `${UPS_NAME:-ups}@${NUT_SERVER:-localhost}` — both fall back
+  silently if unset, rather than failing, so this module stays usable
+  standalone (e.g. in tests) without a full `config.sh` load. In the real
+  deployment both come from config (`UPS_NAME` from `energy.conf`,
+  `NUT_SERVER` from `hosts/RP-node2.conf`) — see the config keys table
+  under `config.sh`.
+* No explicit dependency check on `upsc`: if it's missing, `_nut_query`
+  fails the same way an unreachable UPS would, and every `nut_get_*`/
+  `nut_is_*` caller already has to handle that.
 
 ### Notes
 

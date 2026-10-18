@@ -65,7 +65,9 @@ the last fully-completed milestone.
   `nut_get_runtime`, `nut_get_voltage`, `nut_get_load`,
   `nut_is_online`/`nut_is_on_battery`/`nut_is_charging`). Never calls
   `upscmd`/`upsdrvctl`; an unreachable UPS fails rather than guessing.
-  `nut_refresh_state` deferred to v0.5.0 (needs `state.sh`).
+  `nut_refresh_state` (periodic poll into `state.sh`) still isn't built —
+  see `docs/api.md`'s `nut.sh` section for why it's deferred indefinitely,
+  not tied to a version: the event-driven design never needed a poll.
 * `lib/notify.sh`: `notify_info`/`notify_success`/`notify_warning`/`notify_error`
   push to `ntfy` directly over HTTP — no Alertmanager hop, so a power event can
   still notify even if the rest of the monitoring stack is down. Fails safe: a
@@ -110,11 +112,14 @@ done from this repo.
   stay compatible with macOS's bash 3.2) — last-writer-wins, no merge logic.
 * `flock` doesn't ship with macOS; `brew install flock` (discoteq/flock) is
   close enough to the util-linux one on the Pi for this usage, except `-w 0`
-  means something different between them, so it's avoided.
-* `lib/bootstrap.sh` now also sources `state.sh`. Not wired into
-  `bin/homelab-energy` yet — no current event handler needs persisted state;
-  that lands with whichever v0.6.0 shutdown engine step first needs it
-  (e.g. "is a shutdown already in progress").
+  means something different between them, so it's avoided. See
+  `docs/architecture.md`'s "Platform Compatibility" section for this and
+  the other macOS/Raspberry Pi differences baked into the codebase.
+* `lib/bootstrap.sh` now also sources `state.sh`. At this point nothing
+  wired it into `bin/homelab-energy` yet — the first real consumer ended
+  up being `metrics.sh` (v0.7.0: `last_event`/counters) rather than the
+  shutdown engine this note originally expected; `shutdown.sh` (v0.6.0)
+  uses `state.sh` directly for its own `shutdown:<host>` keys.
 
 ## v0.6.0 delivered
 
