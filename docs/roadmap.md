@@ -1,350 +1,57 @@
 # Project Roadmap
 
-This document defines the planned evolution of the Homelab Energy project.
+This document reflects the real, current plan for Homelab Energy. See `CLAUDE.md`
+for the full architectural decision and topology behind it.
 
-The roadmap is divided into milestones.
+## Architecture decision (not negotiable without discussion)
 
-Each milestone should result in a stable and usable version.
+NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 
----
+- Do not reimplement in Bash what NUT already does: ONBATT/ONLINE detection
+  (`upsmon`), cancellable timers (`upssched`), low battery / FSD, final SAI cutoff.
+- Entry point: `upssched` calls `bin/homelab-energy event <event>` as `CMDSCRIPT`.
+- Proxmox shuts down as a NUT `secondary` client, not via SSH/API from this project.
 
-# Vision
-
-Homelab Energy aims to become the central energy management platform for the entire homelab.
-
-The final system should be capable of:
-
-* Monitoring one or more UPS devices
-* Detecting power events
-* Coordinating graceful shutdown procedures
-* Publishing metrics
-* Sending notifications
-* Providing a modular architecture for future integrations
-
-The project prioritizes reliability over feature count.
-
----
-
-# Current Version
+## Current version
 
 ```text
-0.1.0-dev
+0.1.1-dev
 ```
 
-Status:
-
-🚧 Under active development
-
----
-
-# Milestone 0.1.0 — Project Foundation
-
-## Goal
-
-Create a solid architecture before implementing business logic.
-
-### Deliverables
-
-* Repository structure
-* Documentation
-* Bootstrap module
-* Logger module
-* Configuration manager
-* State manager
-* Utility library
-* Dependency validation
-* Makefile
-* GitHub Actions
-* ShellCheck
-* shfmt
-
-### Exit Criteria
-
-* Project builds successfully
-* Documentation completed
-* All quality checks pass
-* First stable commit
-
----
-
-# Milestone 0.2.0 — NUT Integration
-
-## Goal
-
-Integrate Network UPS Tools.
-
-### Deliverables
-
-* NUT module
-* UPS status wrapper
-* Battery monitoring
-* Runtime monitoring
-* Event detection
-* Automatic state synchronization
-
-### Exit Criteria
-
-* UPS detected correctly
-* Runtime state updated automatically
-* Monitoring survives UPS reconnects
-
----
-
-# Milestone 0.3.0 — Power Event Engine
-
-## Goal
-
-Detect and classify power events.
-
-### Deliverables
-
-* Online detection
-* Battery detection
-* Low battery detection
-* Critical battery detection
-* Recovery detection
-
-### Exit Criteria
-
-* Events generated correctly
-* Duplicate events avoided
-* Event transitions validated
-
----
-
-# Milestone 0.4.0 — Shutdown Engine
-
-## Goal
-
-Provide a deterministic shutdown workflow.
-
-### Deliverables
-
-* Shutdown policies
-* Configurable delays
-* Grace periods
-* Ordered execution
-* Cancellation support
-
-### Exit Criteria
-
-* Full shutdown sequence tested
-* Recovery scenarios validated
-
----
-
-# Milestone 0.5.0 — Proxmox Integration
-
-## Goal
-
-Control Proxmox using its API.
-
-### Deliverables
-
-* Authentication
-* VM shutdown
-* LXC shutdown
-* Node shutdown
-* Status checks
-
-### Exit Criteria
-
-* Controlled shutdown of production environment
-* Retry logic implemented
-
----
-
-# Milestone 0.6.0 — NAS Integration
-
-## Goal
-
-Support NAS shutdown procedures.
-
-### Planned Targets
-
-* Custom NAS
-* Synology (future)
-* Generic SSH shutdown
-
-### Exit Criteria
-
-* NAS powered down safely
-* Configurable shutdown order
-
----
-
-# Milestone 0.7.0 — Monitoring
-
-## Goal
-
-Expose metrics for observability.
-
-### Deliverables
-
-* Prometheus exporter
-* Grafana dashboard
-* Runtime statistics
-* Battery history
-
-### Exit Criteria
-
-* Dashboard available
-* Metrics updated automatically
-
----
-
-# Milestone 0.8.0 — Notifications
-
-## Goal
-
-Notify administrators about relevant events.
-
-### Planned Providers
-
-* Telegram
-* Discord
-* Email
-
-### Events
-
-* Power failure
-* Battery threshold reached
-* Shutdown started
-* Shutdown completed
-* Utility restored
-
-### Exit Criteria
-
-* Notification providers configurable
-* Retry policy implemented
-
----
-
-# Milestone 0.9.0 — Automation
-
-## Goal
-
-Reduce manual administration.
-
-### Deliverables
-
-* Scheduled health checks
-* Self-tests
-* Automatic UPS tests
-* Periodic reports
-
----
-
-# Milestone 1.0.0 — Stable Release
-
-## Goal
-
-First production-ready release.
-
-### Requirements
-
-* Complete documentation
-* Comprehensive test suite
-* Stable APIs
-* Configuration templates
-* Installation guide
-* Upgrade guide
-
-### Quality Requirements
-
-* ShellCheck clean
-* shfmt clean
-* GitHub Actions passing
-* Manual validation completed
-
----
-
-# Future Ideas
-
-The following features are outside the current roadmap but remain possible future extensions.
-
-## Infrastructure
-
-* Multiple UPS devices
-* High Availability
-* Cluster awareness
-
----
-
-## Integrations
-
-* Home Assistant
-* MQTT
-* Slack
-* Microsoft Teams
-* ntfy
-* Pushover
-
----
-
-## Monitoring
-
-* Battery degradation history
-* Runtime prediction
-* Power consumption estimation
-
----
-
-## Dashboard
-
-* Web UI
-* Historical charts
-* Event timeline
-* System overview
-
----
-
-# Development Workflow
-
-Every feature should follow the same lifecycle.
-
-```text
-Idea
-    │
-Design
-    │
-Implementation
-    │
-Testing
-    │
-Refactoring
-    │
-Documentation
-    │
-Quality Checks
-    │
-Commit
-```
-
-No feature should be considered complete until every step has been completed.
-
----
-
-# Definition of Done
-
-A task is considered complete when:
-
-* The implementation is finished
-* Tests have been added
-* Documentation has been updated
-* ShellCheck passes
-* shfmt passes
-* GitHub Actions pass
-* The project remains deployable
-
----
-
-# Release Philosophy
-
-Small, incremental releases are preferred over large feature drops.
-
-Every milestone should leave the project in a usable and stable state.
-
-Main should always be deployable.
-
-Broken code should never be committed.
+## Milestones
+
+| Version | Goal |
+|---|---|
+| v0.1.1 | Cleanup: fix the known bugs below, CI running `make check` in full |
+| v0.2.0 | `bootstrap.sh` + `config.sh` (parser, layers, int/bool validation, clear errors) + configurable logger |
+| v0.3.0 | `notify.sh` (one provider first; secrets out of Git) + `nut.sh` (`upsc` wrapper, read-only) |
+| v0.4.0 | `bin/homelab-energy event` wired to `upssched` → **first production use: power loss/restore/low battery alerts** |
+| v0.5.0 | `state.sh`: JSON via `jq`, atomic writes (tmp + `mv`), locking with `flock` |
+| v0.6.0 | Shutdown engine for hosts without a NUT client (configurable stages, timeouts, idempotency, `--dry-run`) |
+| v0.7.0 | Observability: `nut_exporter` on RP-node2, custom metrics via node_exporter textfile, Prometheus/Grafana on RP-node1 |
+| v0.8.0 | NAS (TrueNAS as a native NUT secondary) and new nodes |
+| v1.0.0 | Real power-cut test, documented runbook |
+
+## v0.1.1 bugs (fix first)
+
+1. ~~`.github/workflows/quality.yml`: `make format-ckeck` typo and CI doesn't run tests.~~
+2. ~~`make test` uses `find -exec` and never fails even if a test fails.~~
+3. ~~`lib/test.sh`: `assert_false` was a copy of `assert_success`.~~
+4. ~~`format` uses `shfmt -i 4` and `format-check` didn't: perpetual diffs.~~
+5. ~~Libraries ran `set -Eeuo pipefail` on load.~~
+6. ~~`lib/logger.sh`: `LOGGER_FILE_PATH` was relative; `LOG_LEVEL` name wasn't mapped to a numeric level.~~
+7. ~~`lib/config.sh` sourced the `.conf` files and used `hosts.conf` instead of `hosts/<hostname>.conf`.~~
+8. ~~`docs/roadmap.md` was stale; `docs/coding-standarts.md` → `coding-standards.md`.~~
+
+## Definition of done
+
+A task is complete when:
+
+* The implementation is finished.
+* Tests have been added.
+* Documentation reflects the code, not a plan.
+* `make check` passes (format, lint, tests).
+* GitHub Actions pass.
+* The project remains deployable.
+
+Main should always be deployable. Broken code should never be committed.

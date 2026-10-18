@@ -26,9 +26,5 @@ jobs:
           curl -sS https://webi.sh/shfmt | sh
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: ShellCheck
-        run: |
-          find . -name "*.sh" -print0 | xargs -0 shellcheck
-
-      - name: Format Check
-        run: make format-ckeck
+      - name: Quality checks
+        run: make check

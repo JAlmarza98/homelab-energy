@@ -19,13 +19,17 @@ format:
 	find . -type f -name "*.sh" -print0 | xargs -0 -r shfmt -w -i 4
 
 format-check:
-	find . -type f -name "*.sh" -print0 | xargs -0 -r shfmt -d
+	find . -type f -name "*.sh" -print0 | xargs -0 -r shfmt -d -i 4
 
 test:
 	@echo ""
 	@echo "Running test suite..."
 	@echo ""
-	@find tests -type f -name "*_test.sh" -exec bash {} \;
+	@status=0; \
+	for f in $$(find tests -type f -name "*_test.sh"); do \
+		bash "$$f" || status=1; \
+	done; \
+	exit $$status
 
 check: format-check lint test
 

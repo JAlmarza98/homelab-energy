@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -Eeuo pipefail
-
 ################################################################################
 # Test counters
 ################################################################################
@@ -110,11 +108,11 @@ assert_false() {
     ((++TEST_TOTAL))
 
     if "$@"; then
-        ((++TEST_PASSED))
-        _test_print_result PASS "${name}"
-    else
         ((++TEST_FAILED))
         _test_print_result FAIL "${name}"
+    else
+        ((++TEST_PASSED))
+        _test_print_result PASS "${name}"
     fi
 
 }

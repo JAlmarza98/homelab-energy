@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-set -Eeuo pipefail
-
 ################################################################################
 # Configuration
 ################################################################################
@@ -18,7 +16,7 @@ LOGGER_HANDLER_CONSOLE=true
 LOGGER_HANDLER_FILE=false
 LOGGER_HANDLER_JOURNALD=false
 
-LOGGER_FILE_PATH="logs/energy.log"
+LOGGER_FILE_PATH="${PROJECT_ROOT:-.}/logs/energy.log"
 
 ################################################################################
 # Colors
@@ -35,6 +33,25 @@ readonly LOGGER_COLOR_ERROR="\033[0;31m"
 ################################################################################
 # Public API
 ################################################################################
+
+# Sets LOGGER_LEVEL from a level name (e.g. config's LOG_LEVEL=INFO).
+logger_set_level() {
+
+    local name="$1"
+
+    case "${name}" in
+    DEBUG) LOGGER_LEVEL="${LOG_LEVEL_DEBUG}" ;;
+    INFO) LOGGER_LEVEL="${LOG_LEVEL_INFO}" ;;
+    SUCCESS) LOGGER_LEVEL="${LOG_LEVEL_SUCCESS}" ;;
+    WARN) LOGGER_LEVEL="${LOG_LEVEL_WARN}" ;;
+    ERROR) LOGGER_LEVEL="${LOG_LEVEL_ERROR}" ;;
+    *)
+        echo "Unknown log level: ${name}" >&2
+        return 1
+        ;;
+    esac
+
+}
 
 log_debug() {
 
