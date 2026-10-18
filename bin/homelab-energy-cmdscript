@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+# upssched's CMDSCRIPT convention is a single executable called with exactly
+# one argument (the message name from an AT ... EXECUTE rule). It cannot
+# embed "event" as a literal extra argument, so this shim exists only to
+# adapt that single-argument call into `homelab-energy event <name>`.
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+exec "${SCRIPT_DIR}/homelab-energy" event "${1:-}"

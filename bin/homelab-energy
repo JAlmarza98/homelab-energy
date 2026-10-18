@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+
+set -Eeuo pipefail
+
+PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+source "${PROJECT_ROOT}/lib/bootstrap.sh"
+
+################################################################################
+# Private helpers
+################################################################################
+
+_usage() {
+
+    echo "Usage: homelab-energy event <NUT_EVENT_NAME>" >&2
+
+}
+
+# Reacts to a NUT event forwarded by upssched as CMDSCRIPT. NUT (upsmon)
+# already decided the event happened; this only logs and notifies, it never
+# makes a shutdown decision.
+_handle_event() {
+
+    local event="$1"
+
+    case "${event}" in
+    ONBATT)
+        log_warn "UPS on battery: power lost"
+        notify_warning "UPS on battery: power lost"
+        ;;
+    ONLINE)
+        log_success "UPS online: power restored"
+        notify_success "UPS online: power restored"
+        ;;
+    LOWBATT)
+        log_error "UPS battery low"
+        notify_error "UPS battery low"
+        ;;
+    *)
+        log_warn "Unhandled NUT event: ${event}"
+        ;;
+    esac
+
+}
+
+################################################################################
+# Main
+################################################################################
+
+main() {
+
+    bootstrap
+
+    local command="${1:-}"
+
+    case "${command}" in
+    event)
+        [[ -n "${2:-}" ]] || {
+            _usage
+            exit 2
+        }
+        _handle_event "$2"
+        ;;
+    *)
+        _usage
+        exit 2
+        ;;
+    esac
+
+}
+
+main "$@"

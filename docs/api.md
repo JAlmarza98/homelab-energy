@@ -46,6 +46,38 @@ bootstrap
 
 ---
 
+# bin/homelab-energy
+
+## Purpose
+
+The only entry point into the project at runtime. Sources `bootstrap.sh`,
+calls `bootstrap`, then dispatches a subcommand.
+
+## Usage
+
+```text
+homelab-energy event <NUT_EVENT_NAME>
+```
+
+### Behaviour
+
+* `event ONBATT` / `event ONLINE` / `event LOWBATT`: log and notify
+  (`notify_warning`/`notify_success`/`notify_error`). NUT (`upsmon`) already
+  decided the event happened; this never makes a shutdown decision.
+* Any other event name: logged via `log_warn`, no notification, exits 0 —
+  an unrecognised event must never make the hook fail.
+* Missing/unknown subcommand: usage message on stderr, exit 2.
+
+## bin/homelab-energy-cmdscript
+
+`upssched`'s `CMDSCRIPT` directive calls a single executable with exactly
+one argument (the message name from an `AT ... EXECUTE` rule); it cannot
+embed `event` as a literal extra argument. This shim exists only to adapt
+that one-argument call into `homelab-energy event <name>`. See
+`templates/upssched.conf.example` for the `upssched.conf` wiring.
+
+---
+
 # logger.sh
 
 ## Purpose

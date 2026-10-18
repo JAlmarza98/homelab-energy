@@ -15,7 +15,7 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 ## Current version
 
 ```text
-0.3.0-dev
+0.4.0-dev
 ```
 
 ## Milestones
@@ -25,7 +25,7 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 | v0.1.1 | ✅ Cleanup: fix the known bugs below, CI running `make check` in full |
 | v0.2.0 | ✅ `bootstrap.sh` + `config.sh` (parser, layers, int/bool validation, clear errors) + configurable logger |
 | v0.3.0 | ✅ `notify.sh` (one provider first; secrets out of Git) + `nut.sh` (`upsc` wrapper, read-only) |
-| v0.4.0 | `bin/homelab-energy event` wired to `upssched` → **first production use: power loss/restore/low battery alerts** |
+| v0.4.0 | ✅ in repo, ⏳ not yet installed on RP-node2 — `bin/homelab-energy event` wired to `upssched` → **first production use: power loss/restore/low battery alerts** |
 | v0.5.0 | `state.sh`: JSON via `jq`, atomic writes (tmp + `mv`), locking with `flock` |
 | v0.6.0 | Shutdown engine for hosts without a NUT client (configurable stages, timeouts, idempotency, `--dry-run`) |
 | v0.7.0 | Observability: `nut_exporter` on RP-node2, custom metrics via node_exporter textfile, Prometheus/Grafana on RP-node1 |
@@ -71,6 +71,27 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
   in `defaults.conf`/`energy.conf` — see `config/secrets.env.example`.
 * `lib/bootstrap.sh` now also sources `nut.sh` and `notify.sh`, matching the
   composition root in `docs/architecture.md`.
+
+## v0.4.0 delivered
+
+* `bin/homelab-energy event <NUT_EVENT_NAME>`: handles `ONBATT`/`ONLINE`/`LOWBATT`
+  (log + notify); any other event is logged and ignored rather than failing
+  the hook. Never makes a shutdown decision — NUT already decided.
+* `bin/homelab-energy-cmdscript`: the actual `CMDSCRIPT` target. `upssched`
+  calls a `CMDSCRIPT` with exactly one argument, so this shim adapts that
+  into `homelab-energy event <name>`.
+* `templates/upssched.conf.example`: the `upssched.conf` wiring (`CMDSCRIPT`
+  + `AT ... EXECUTE` rules) for RP-node2.
+* `make lint`/`format`/`format-check` now also cover `bin/*` (previously
+  only matched `*.sh`, silently skipping the new extension-less entry points).
+
+**Remaining for real production use**: install `templates/upssched.conf.example`
+as `/etc/nut/upssched.conf` on RP-node2 (adjusting the `CMDSCRIPT` path),
+confirm `upsmon.conf` has `NOTIFYCMD upssched-cmd` and `NOTIFYFLAG` set for
+`ONBATT`/`ONLINE`/`LOWBATT`, set real `NTFY_TOPIC`/`NTFY_URL` in
+`/etc/homelab-energy/secrets.env` (chmod 600), and set `NOTIFICATIONS_ENABLED=true`
+in `energy.conf`. This is a manual deployment step on the Pi, not something
+done from this repo.
 
 ## Definition of done
 

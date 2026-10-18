@@ -1,0 +1,14 @@
+# Example upssched.conf for RP-node2 (see CLAUDE.md topology).
+#
+# Install at /etc/nut/upssched.conf and adjust the CMDSCRIPT path to the
+# real deploy path (CLAUDE.md: /home/pi/Projects/homelab-energy). This is a
+# template only: nothing here is applied automatically, and it is not a
+# substitute for upsmon.conf already having
+#   NOTIFYCMD /usr/sbin/upssched-cmd
+# and NOTIFYFLAG entries enabled for the events below.
+
+CMDSCRIPT /home/pi/Projects/homelab-energy/bin/homelab-energy-cmdscript
+
+AT ONBATT * EXECUTE ONBATT
+AT ONLINE * EXECUTE ONLINE
+AT LOWBATT * EXECUTE LOWBATT

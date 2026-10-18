@@ -14,6 +14,7 @@ Current implementation:
 * Layered configuration (`defaults.conf` → `energy.conf` → `hosts/<hostname>.conf` → secrets)
 * UPS monitoring (Network UPS Tools, read-only)
 * Alerting and notifications (ntfy)
+* `bin/homelab-energy event` wired to `upssched` (power loss/restore/low battery)
 * Modular logging framework
 * Lightweight testing framework
 * Development tooling (ShellCheck, shfmt, Make)
@@ -34,6 +35,7 @@ Planned features:
 
 ```text
 .
+├── bin/
 ├── config/
 ├── docs/
 ├── lib/
@@ -111,7 +113,6 @@ The project follows a few core principles.
 The next milestones are:
 
 * State management (`state.sh`)
-* `bin/homelab-energy event` wired to `upssched` (first production alerts)
 * Shutdown engine for hosts without a NUT client
 * Grafana dashboards
 * Proxmox automation

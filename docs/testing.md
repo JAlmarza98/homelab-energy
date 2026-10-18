@@ -31,6 +31,7 @@ tests/
 ├── bootstrap_test.sh
 ├── nut_test.sh
 ├── notify_test.sh
+├── homelab_energy_test.sh
 └── state_test.sh           # Future
 ```
 

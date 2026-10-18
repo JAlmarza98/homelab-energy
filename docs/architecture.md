@@ -72,6 +72,7 @@ A new abstraction should only be introduced when there are at least two or three
 # Project Structure
 
 ```text id="br7lsd"
+bin/
 config/
 docs/
 lib/

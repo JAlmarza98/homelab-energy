@@ -13,13 +13,13 @@ help:
 	@echo "  make check"
 
 lint:
-	find . -type f -name "*.sh" -print0 | xargs -0 -r shellcheck
+	find . -type f \( -name "*.sh" -o -path "./bin/*" \) -print0 | xargs -0 -r shellcheck
 
 format:
-	find . -type f -name "*.sh" -print0 | xargs -0 -r shfmt -w -i 4
+	find . -type f \( -name "*.sh" -o -path "./bin/*" \) -print0 | xargs -0 -r shfmt -w -i 4
 
 format-check:
-	find . -type f -name "*.sh" -print0 | xargs -0 -r shfmt -d -i 4
+	find . -type f \( -name "*.sh" -o -path "./bin/*" \) -print0 | xargs -0 -r shfmt -d -i 4
 
 test:
 	@echo ""
