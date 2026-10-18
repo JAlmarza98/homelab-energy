@@ -194,7 +194,7 @@ Additional dependencies may be added as the project evolves.
 
 Communicate with Network UPS Tools.
 
-## Planned Public API
+## Public API
 
 ```bash
 nut_is_online
@@ -212,9 +212,16 @@ nut_get_voltage
 nut_get_load
 
 nut_get_status
-
-nut_refresh_state
 ```
+
+`nut_refresh_state` is deferred until `state.sh` exists (v0.5.0): there is
+nothing to refresh into yet.
+
+### Behaviour
+
+Wraps `upsc` only (read-only). Never calls `upscmd`, `upsdrvctl` or any
+command that could affect the UPS. Returns failure instead of guessing when
+the UPS is unreachable.
 
 ### Notes
 
@@ -283,7 +290,7 @@ shutdown_execute
 
 Send notifications through supported providers.
 
-## Planned Public API
+## Public API
 
 ```bash
 notify_info MESSAGE
@@ -295,7 +302,15 @@ notify_error MESSAGE
 notify_success MESSAGE
 ```
 
-Supported providers will be configurable.
+### Behaviour
+
+* Provider: `ntfy`, called directly over HTTP (no dependency on any alerting
+  stack, since a power event must still notify if that stack is down).
+* Configured via `NOTIFICATIONS_ENABLED` (energy.conf) and `NTFY_URL` /
+  `NTFY_TOPIC` / `NTFY_TOKEN` (secrets, never in Git — see
+  `config/secrets.env.example`).
+* Fails safe: a notification error is logged via `log_warn` and never
+  propagates, so it can never block or delay a shutdown.
 
 ---
 

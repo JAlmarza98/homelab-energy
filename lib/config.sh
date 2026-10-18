@@ -10,6 +10,12 @@ ENERGY_CONFIG="${CONFIG_DIR}/energy.conf"
 
 HOSTS_CONFIG="${CONFIG_DIR}/hosts/$(hostname).conf"
 
+# Secrets never live in Git: a local dev override (gitignored) or the
+# production path with restricted permissions.
+SECRETS_CONFIG_LOCAL="${SECRETS_CONFIG_LOCAL:-${PROJECT_ROOT}/.env}"
+
+SECRETS_CONFIG_SYSTEM="${SECRETS_CONFIG_SYSTEM:-/etc/homelab-energy/secrets.env}"
+
 ################################################################################
 # Private helpers
 ################################################################################
@@ -49,6 +55,31 @@ _config_require_int() {
 
     [[ "${value}" =~ ^[0-9]+$ ]] || {
         echo "Invalid config: ${key} must be an integer (got '${value}')" >&2
+        exit 1
+    }
+
+}
+
+_config_mode() {
+
+    local file="$1"
+
+    stat -c '%a' "${file}" 2>/dev/null || stat -f '%Lp' "${file}" 2>/dev/null
+
+}
+
+# Refuses to load a secrets file that is readable by group/others, so a
+# misconfigured secrets.env cannot leak NUT passwords or notification
+# tokens to other local users.
+_config_require_private() {
+
+    local file="$1"
+    local mode
+
+    mode="$(_config_mode "${file}")"
+
+    [[ "${mode: -2}" == "00" ]] || {
+        echo "Refusing to load ${file}: must not be readable by group/others (chmod 600)" >&2
         exit 1
     }
 
@@ -96,6 +127,16 @@ load_config() {
     [[ -f "${ENERGY_CONFIG}" ]] && _config_parse_file "${ENERGY_CONFIG}"
 
     [[ -f "${HOSTS_CONFIG}" ]] && _config_parse_file "${HOSTS_CONFIG}"
+
+    if [[ -f "${SECRETS_CONFIG_LOCAL}" ]]; then
+        _config_require_private "${SECRETS_CONFIG_LOCAL}"
+        _config_parse_file "${SECRETS_CONFIG_LOCAL}"
+    fi
+
+    if [[ -f "${SECRETS_CONFIG_SYSTEM}" ]]; then
+        _config_require_private "${SECRETS_CONFIG_SYSTEM}"
+        _config_parse_file "${SECRETS_CONFIG_SYSTEM}"
+    fi
 
     _config_validate
 

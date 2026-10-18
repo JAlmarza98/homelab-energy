@@ -29,8 +29,9 @@ tests/
 ├── utils_test.sh
 ├── config_test.sh
 ├── bootstrap_test.sh
-├── state_test.sh           # Future
-└── nut_test.sh             # Future
+├── nut_test.sh
+├── notify_test.sh
+└── state_test.sh           # Future
 ```
 
 Each module owns its own tests.

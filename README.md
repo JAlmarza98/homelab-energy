@@ -11,7 +11,9 @@ The project is designed around simplicity, reliability and maintainability, with
 Current implementation:
 
 * Bootstrap framework
-* Layered configuration (`defaults.conf` → `energy.conf` → `hosts/<hostname>.conf`)
+* Layered configuration (`defaults.conf` → `energy.conf` → `hosts/<hostname>.conf` → secrets)
+* UPS monitoring (Network UPS Tools, read-only)
+* Alerting and notifications (ntfy)
 * Modular logging framework
 * Lightweight testing framework
 * Development tooling (ShellCheck, shfmt, Make)
@@ -20,11 +22,9 @@ Current implementation:
 
 Planned features:
 
-* UPS monitoring (Network UPS Tools)
 * Persistent state management
 * Proxmox integration
 * Grafana integration
-* Alerting and notifications
 * Scheduled tasks
 * Multi-host support
 
@@ -110,12 +110,11 @@ The project follows a few core principles.
 
 The next milestones are:
 
-* State management
-* NUT integration
-* Energy monitoring service
+* State management (`state.sh`)
+* `bin/homelab-energy event` wired to `upssched` (first production alerts)
+* Shutdown engine for hosts without a NUT client
 * Grafana dashboards
 * Proxmox automation
-* Notification system
 
 ---
 

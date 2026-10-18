@@ -7,6 +7,8 @@ PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${PROJECT_ROOT}/lib/utils.sh"
 source "${PROJECT_ROOT}/lib/logger.sh"
 source "${PROJECT_ROOT}/lib/config.sh"
+source "${PROJECT_ROOT}/lib/nut.sh"
+source "${PROJECT_ROOT}/lib/notify.sh"
 
 ################################################################################
 # Public API

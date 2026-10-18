@@ -45,17 +45,20 @@ EOF
 
 # Runs "$@" (a command or function) inside a fresh shell, after load_config
 # has parsed the layers rooted at $1. Isolates each test from the others and
-# from the real config files.
+# from the real config/secrets files.
 _config_run() {
 
     local dir="$1"
     shift
 
-    CONFIG_DIR="${dir}" PROJECT_ROOT="${PROJECT_ROOT}" bash -c '
-        source "${PROJECT_ROOT}/lib/config.sh"
-        load_config
-        "$@"
-    ' _config_run "$@"
+    CONFIG_DIR="${dir}" PROJECT_ROOT="${PROJECT_ROOT}" \
+        SECRETS_CONFIG_LOCAL="${SECRETS_CONFIG_LOCAL:-${dir}/.env}" \
+        SECRETS_CONFIG_SYSTEM="${SECRETS_CONFIG_SYSTEM:-/nonexistent/secrets.env}" \
+        bash -c '
+            source "${PROJECT_ROOT}/lib/config.sh"
+            load_config
+            "$@"
+        ' _config_run "$@"
 
 }
 
@@ -128,6 +131,32 @@ mkdir -p "${MISSING_CONFIG_DIR}"
 assert_false \
     "fails when defaults.conf is missing" \
     _config_run "${MISSING_CONFIG_DIR}" config_get UPS_NAME
+
+################################################################################
+# Secrets
+################################################################################
+
+SECRET_FILE="${PROJECT_ROOT}/tests/tmp/secrets.env"
+
+echo "NTFY_TOPIC=homelab-test" >"${SECRET_FILE}"
+chmod 600 "${SECRET_FILE}"
+
+assert_equals \
+    "a private secrets file is loaded" \
+    "homelab-test" \
+    "$(SECRETS_CONFIG_LOCAL="${SECRET_FILE}" _config_run "${TEST_CONFIG_DIR}" config_get NTFY_TOPIC)"
+
+chmod 644 "${SECRET_FILE}"
+
+_config_run_with_loose_secret() {
+    SECRETS_CONFIG_LOCAL="${SECRET_FILE}" _config_run "${TEST_CONFIG_DIR}" config_get NTFY_TOPIC
+}
+
+assert_false \
+    "a group/world-readable secrets file is refused" \
+    _config_run_with_loose_secret
+
+rm -f "${SECRET_FILE}"
 
 ################################################################################
 # Cleanup

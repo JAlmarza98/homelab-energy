@@ -15,7 +15,7 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 ## Current version
 
 ```text
-0.2.0-dev
+0.3.0-dev
 ```
 
 ## Milestones
@@ -24,7 +24,7 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 |---|---|
 | v0.1.1 | ✅ Cleanup: fix the known bugs below, CI running `make check` in full |
 | v0.2.0 | ✅ `bootstrap.sh` + `config.sh` (parser, layers, int/bool validation, clear errors) + configurable logger |
-| v0.3.0 | `notify.sh` (one provider first; secrets out of Git) + `nut.sh` (`upsc` wrapper, read-only) |
+| v0.3.0 | ✅ `notify.sh` (one provider first; secrets out of Git) + `nut.sh` (`upsc` wrapper, read-only) |
 | v0.4.0 | `bin/homelab-energy event` wired to `upssched` → **first production use: power loss/restore/low battery alerts** |
 | v0.5.0 | `state.sh`: JSON via `jq`, atomic writes (tmp + `mv`), locking with `flock` |
 | v0.6.0 | Shutdown engine for hosts without a NUT client (configurable stages, timeouts, idempotency, `--dry-run`) |
@@ -53,6 +53,24 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
   clear errors instead of silent `source`.
 * `lib/logger.sh`: `logger_set_level` maps a config `LOG_LEVEL` name to the
   numeric level `bootstrap` wires in automatically.
+
+## v0.3.0 delivered
+
+* `lib/nut.sh`: read-only `upsc` wrapper (`nut_get_status`, `nut_get_charge`,
+  `nut_get_runtime`, `nut_get_voltage`, `nut_get_load`,
+  `nut_is_online`/`nut_is_on_battery`/`nut_is_charging`). Never calls
+  `upscmd`/`upsdrvctl`; an unreachable UPS fails rather than guessing.
+  `nut_refresh_state` deferred to v0.5.0 (needs `state.sh`).
+* `lib/notify.sh`: `notify_info`/`notify_success`/`notify_warning`/`notify_error`
+  push to `ntfy` directly over HTTP — no Alertmanager hop, so a power event can
+  still notify even if the rest of the monitoring stack is down. Fails safe: a
+  `curl` error is logged and never propagates, so it can't block a shutdown.
+* `lib/config.sh`: added an optional secrets layer (`.env` locally or
+  `/etc/homelab-energy/secrets.env` in production) loaded after `hosts/`, with
+  a hard refusal if the file is readable by group/others. Secrets never land
+  in `defaults.conf`/`energy.conf` — see `config/secrets.env.example`.
+* `lib/bootstrap.sh` now also sources `nut.sh` and `notify.sh`, matching the
+  composition root in `docs/architecture.md`.
 
 ## Definition of done
 
