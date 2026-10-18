@@ -333,6 +333,12 @@ Current development tools include:
 * shfmt
 * Make
 
+Current runtime dependencies:
+
+* `jq` and `flock` (`state.sh`)
+* `curl` (`notify.sh`)
+* `upsc` (`nut.sh`)
+
 Runtime should remain dependency-light whenever possible.
 
 ---

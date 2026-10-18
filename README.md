@@ -15,6 +15,7 @@ Current implementation:
 * UPS monitoring (Network UPS Tools, read-only)
 * Alerting and notifications (ntfy)
 * `bin/homelab-energy event` wired to `upssched` (power loss/restore/low battery)
+* Persistent state (`state.sh`, JSON + atomic writes + `flock`)
 * Modular logging framework
 * Lightweight testing framework
 * Development tooling (ShellCheck, shfmt, Make)
@@ -23,7 +24,6 @@ Current implementation:
 
 Planned features:
 
-* Persistent state management
 * Proxmox integration
 * Grafana integration
 * Scheduled tasks
@@ -112,7 +112,6 @@ The project follows a few core principles.
 
 The next milestones are:
 
-* State management (`state.sh`)
 * Shutdown engine for hosts without a NUT client
 * Grafana dashboards
 * Proxmox automation
@@ -128,7 +127,13 @@ Development tools:
 * ShellCheck
 * shfmt
 
-Runtime dependencies will be kept to the minimum possible.
+Runtime dependencies:
+
+* `jq` and `flock` (`state.sh`)
+* `curl` (`notify.sh`)
+* `upsc` (`nut.sh`)
+
+Kept to the minimum needed by the modules that actually use them.
 
 ---
 

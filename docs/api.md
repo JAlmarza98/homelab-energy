@@ -161,6 +161,16 @@ The state module owns every file inside the `state/` directory.
 
 No other module should modify state files directly.
 
+* Backed by a single `state/state.json`, read into the in-memory
+  `STATE_JSON` string by `state_load`. `state_get`/`state_set`/`state_delete`/
+  `state_exists` only touch that in-memory copy via `jq` — call `state_load`
+  first, and `state_save` to persist.
+* `state_save` writes to a temp file and `mv`s it into place (atomic), and
+  both `state_load` and `state_save` hold an exclusive `flock` on
+  `state/state.lock` while they touch disk.
+* Requires `jq` and `flock`. Last-writer-wins: this does not merge concurrent
+  changes, it only keeps a single write from corrupting the file.
+
 ---
 
 # utils.sh

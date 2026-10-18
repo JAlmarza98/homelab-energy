@@ -15,7 +15,7 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 ## Current version
 
 ```text
-0.4.0-dev
+0.5.0-dev
 ```
 
 ## Milestones
@@ -26,7 +26,7 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 | v0.2.0 | ✅ `bootstrap.sh` + `config.sh` (parser, layers, int/bool validation, clear errors) + configurable logger |
 | v0.3.0 | ✅ `notify.sh` (one provider first; secrets out of Git) + `nut.sh` (`upsc` wrapper, read-only) |
 | v0.4.0 | ✅ in repo, ⏳ not yet installed on RP-node2 — `bin/homelab-energy event` wired to `upssched` → **first production use: power loss/restore/low battery alerts** |
-| v0.5.0 | `state.sh`: JSON via `jq`, atomic writes (tmp + `mv`), locking with `flock` |
+| v0.5.0 | ✅ `state.sh`: JSON via `jq`, atomic writes (tmp + `mv`), locking with `flock` |
 | v0.6.0 | Shutdown engine for hosts without a NUT client (configurable stages, timeouts, idempotency, `--dry-run`) |
 | v0.7.0 | Observability: `nut_exporter` on RP-node2, custom metrics via node_exporter textfile, Prometheus/Grafana on RP-node1 |
 | v0.8.0 | NAS (TrueNAS as a native NUT secondary) and new nodes |
@@ -92,6 +92,24 @@ confirm `upsmon.conf` has `NOTIFYCMD upssched-cmd` and `NOTIFYFLAG` set for
 `/etc/homelab-energy/secrets.env` (chmod 600), and set `NOTIFICATIONS_ENABLED=true`
 in `energy.conf`. This is a manual deployment step on the Pi, not something
 done from this repo.
+
+## v0.5.0 delivered
+
+* `lib/state.sh`: `state_load`/`state_save`/`state_get`/`state_set`/`state_delete`/
+  `state_exists`, backed by a single `state/state.json`. `state_load` reads
+  the file into the in-memory `STATE_JSON` string; `state_get`/`set`/`delete`/
+  `exists` only touch that string via `jq`; `state_save` writes a temp file
+  and `mv`s it into place.
+* Both `state_load` and `state_save` hold an exclusive `flock` on
+  `state/state.lock` (fixed fd 200, not bash 4's `{fd}` auto-allocation, to
+  stay compatible with macOS's bash 3.2) — last-writer-wins, no merge logic.
+* `flock` doesn't ship with macOS; `brew install flock` (discoteq/flock) is
+  close enough to the util-linux one on the Pi for this usage, except `-w 0`
+  means something different between them, so it's avoided.
+* `lib/bootstrap.sh` now also sources `state.sh`. Not wired into
+  `bin/homelab-energy` yet — no current event handler needs persisted state;
+  that lands with whichever v0.6.0 shutdown engine step first needs it
+  (e.g. "is a shutdown already in progress").
 
 ## Definition of done
 

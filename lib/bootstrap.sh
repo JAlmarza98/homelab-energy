@@ -9,6 +9,7 @@ source "${PROJECT_ROOT}/lib/logger.sh"
 source "${PROJECT_ROOT}/lib/config.sh"
 source "${PROJECT_ROOT}/lib/nut.sh"
 source "${PROJECT_ROOT}/lib/notify.sh"
+source "${PROJECT_ROOT}/lib/state.sh"
 
 ################################################################################
 # Public API
