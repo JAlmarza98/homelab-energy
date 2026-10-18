@@ -93,6 +93,7 @@ Current documents include:
 * `ARCHITECTURE.md`
 * `TESTING.md`
 * `ROADMAP.md`
+* `RUNBOOK.md` — the real power-cut test procedure
 
 ---
 
@@ -114,8 +115,8 @@ The project follows a few core principles.
 
 The next milestones are:
 
-* NAS integration (native NUT secondary)
 * Proxmox automation
+* NAS integration (native NUT secondary) — blocked until a real NAS exists
 
 ---
 

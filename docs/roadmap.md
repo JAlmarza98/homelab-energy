@@ -18,6 +18,11 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 0.7.0-dev
 ```
 
+v0.8.0 is blocked (no real NAS to integrate yet) and v1.0.0 is partially
+done (the runbook is written; the actual power-cut test is a manual,
+physical step) — see both sections below. The version number stays at
+the last fully-completed milestone.
+
 ## Milestones
 
 | Version | Goal |
@@ -29,8 +34,8 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 | v0.5.0 | ✅ `state.sh`: JSON via `jq`, atomic writes (tmp + `mv`), locking with `flock` |
 | v0.6.0 | ✅ Shutdown engine for hosts without a NUT client (configurable stages, timeouts, idempotency, `--dry-run`) |
 | v0.7.0 | ✅ in repo, ⏳ not yet installed — Observability: `nut_exporter` on RP-node2, custom metrics via node_exporter textfile, Prometheus/Grafana on RP-node1 |
-| v0.8.0 | NAS (TrueNAS as a native NUT secondary) and new nodes |
-| v1.0.0 | Real power-cut test, documented runbook |
+| v0.8.0 | 🚫 blocked — NAS (TrueNAS as a native NUT secondary) and new nodes |
+| v1.0.0 | ✅ runbook, ⏳ the real power-cut test itself is manual/physical |
 
 ## v0.1.1 bugs (fix first)
 
@@ -155,6 +160,25 @@ RP-node2 and Prometheus+Grafana on RP-node1 from these templates, create
 the textfile collector directory with the right ownership, and point
 `METRICS_FILE` at it in `energy.conf`/`hosts/RP-node2.conf`. Manual
 deployment on real hardware, not done from this repo.
+
+## v0.8.0: blocked
+
+No NAS exists in the current topology (`CLAUDE.md`'s topology table has
+Proxmox, RP-node1 and the SAI only). TrueNAS's NUT client is configured on
+the NAS itself via its own UI, not in this repo — there is nothing for
+homelab-energy to build until a real NAS is added. Revisit when one is.
+
+## v1.0.0: runbook delivered, real test still manual
+
+* `docs/runbook.md`: the real power-cut test procedure, grounded in the
+  measured NUT behaviour from `CLAUDE.md` (the primary's ~60s secondary
+  wait regardless of `HOSTSYNC`, the real `ups.delay.shutdown=180` margin,
+  the FSD cleanup order that bit a previous test). Covers pre-test
+  checks, expected event sequence, cleanup order, and what to check if
+  something goes wrong.
+* The test itself — physically cutting utility power and watching the
+  whole chain react — is Joel's manual, physical action. Nothing in this
+  repo can run it.
 
 ## Definition of done
 
