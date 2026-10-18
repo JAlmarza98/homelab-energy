@@ -1,0 +1,14 @@
+# Where homelab-energy's metrics.sh writes homelab_energy_*.prom on
+# RP-node2, and where node_exporter's textfile collector must read from.
+#
+# node_exporter flag (RP-node1, if it scrapes RP-node2's node_exporter) or
+# RP-node2's own node_exporter, whichever runs the textfile collector:
+#   --collector.textfile.directory=/var/lib/node_exporter/textfile_collector
+#
+# homelab-energy side (config/energy.conf or the environment):
+#   METRICS_FILE=/var/lib/node_exporter/textfile_collector/homelab_energy.prom
+#
+# That directory must exist and be writable by the user running
+# bin/homelab-energy (see CLAUDE.md: configuration in /etc/homelab-energy/,
+# state in /var/lib/homelab-energy/ — node_exporter's own data dir is
+# separate and owned by its own service user).

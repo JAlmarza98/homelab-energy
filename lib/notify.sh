@@ -45,8 +45,12 @@ _notify_send() {
 
     [[ -n "${NTFY_TOKEN:-}" ]] && curl_args+=(-H "Authorization: Bearer ${NTFY_TOKEN}")
 
-    curl "${curl_args[@]}" "${url}" >/dev/null 2>&1 ||
+    if curl "${curl_args[@]}" "${url}" >/dev/null 2>&1; then
+        metrics_increment notify_sent
+    else
+        metrics_increment notify_failed
         log_warn "Failed to send notification: ${message}"
+    fi
 
     return 0
 

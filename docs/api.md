@@ -67,6 +67,10 @@ homelab-energy event <NUT_EVENT_NAME>
 * Any other event name: logged via `log_warn`, no notification, exits 0 —
   an unrecognised event must never make the hook fail.
 * Missing/unknown subcommand: usage message on stderr, exit 2.
+* Records `last_event`/`last_event_at` via `metrics_update` and exports
+  metrics (`metrics_export`) after every `event` call. A metrics export
+  failure (e.g. the textfile collector directory doesn't exist) is logged
+  via `log_warn` and never fails the hook.
 
 ## bin/homelab-energy-cmdscript
 
@@ -377,21 +381,40 @@ notify_success MESSAGE
 
 ## Purpose
 
-Expose metrics for monitoring systems.
+Expose homelab-energy's own metrics (NUT/UPS metrics are already covered by
+`nut_exporter`, a separate tool — see `templates/`) to Prometheus via
+node_exporter's textfile collector.
 
-## Planned Public API
+## Public API
 
 ```bash
-metrics_export
+metrics_update NAME VALUE
 
-metrics_update
+metrics_increment NAME
 
 metrics_collect
+
+metrics_export
 ```
+
+### Behaviour
+
+* `metrics_update`/`metrics_increment`: record a value, backed by `state.sh`
+  (call `state_load` first, `state_save` to persist) under a `metrics:`
+  key prefix. `notify.sh` calls `metrics_increment` itself to track
+  `notify_sent`/`notify_failed`; `bin/homelab-energy` records
+  `last_event`/`last_event_at`.
+* `metrics_collect`: prints the current values, plus every `shutdown.sh`
+  host status, as Prometheus text exposition format (with `# HELP`/`# TYPE`).
+  Never queries `upsc`/`curl`/`ssh` itself — only reports what the other
+  modules already recorded.
+* `metrics_export`: writes `metrics_collect`'s output to `METRICS_FILE`
+  (default `/var/lib/node_exporter/textfile_collector/homelab_energy.prom`)
+  atomically (tmp + `mv`, same pattern as `state_save`).
 
 Initial target:
 
-* Prometheus
+* Prometheus (via node_exporter's textfile collector)
 
 Future targets:
 

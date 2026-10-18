@@ -1,0 +1,24 @@
+# Example Prometheus scrape config for RP-node1 (see CLAUDE.md topology).
+# Install at /etc/prometheus/prometheus.yml (or mount into the container
+# from templates/docker-compose.observability.yml.example) and adjust
+# targets/ports to match the real deployment.
+
+global:
+  scrape_interval: 30s
+
+scrape_configs:
+  - job_name: node_exporter_rp_node1
+    static_configs:
+      - targets: ["localhost:9100"]
+
+  # node_exporter on RP-node2, including homelab-energy's own metrics via
+  # its textfile collector (see templates/node_exporter_textfile.example).
+  - job_name: node_exporter_rp_node2
+    static_configs:
+      - targets: ["10.0.0.21:9100"]
+
+  # NUT/UPS metrics (ups.status, battery.charge, ...), served by
+  # nut_exporter on RP-node2 (see templates/nut_exporter.service.example).
+  - job_name: nut_exporter
+    static_configs:
+      - targets: ["10.0.0.21:9199"]

@@ -15,10 +15,12 @@ test_init "bin/homelab-energy"
 ################################################################################
 
 TEST_CONFIG_DIR="${PROJECT_ROOT}/tests/tmp/homelab-energy-config"
+TEST_STATE_DIR="${PROJECT_ROOT}/tests/tmp/homelab-energy-state"
+TEST_METRICS_FILE="${PROJECT_ROOT}/tests/tmp/homelab-energy-metrics.prom"
 STUB_BIN="${PROJECT_ROOT}/tests/tmp/homelab-energy-bin"
 CURL_LOG="${PROJECT_ROOT}/tests/tmp/homelab-energy-curl.log"
 
-rm -rf "${TEST_CONFIG_DIR}" "${STUB_BIN}" "${CURL_LOG}"
+rm -rf "${TEST_CONFIG_DIR}" "${TEST_STATE_DIR}" "${STUB_BIN}" "${CURL_LOG}" "${TEST_METRICS_FILE}"
 mkdir -p "${TEST_CONFIG_DIR}/hosts" "${STUB_BIN}"
 
 cat >"${TEST_CONFIG_DIR}/defaults.conf" <<'EOF'
@@ -53,6 +55,8 @@ _run() {
         CONFIG_DIR="${TEST_CONFIG_DIR}" \
         SECRETS_CONFIG_LOCAL="${SECRET_FILE}" \
         SECRETS_CONFIG_SYSTEM="/nonexistent/secrets.env" \
+        STATE_DIR="${TEST_STATE_DIR}" \
+        METRICS_FILE="${TEST_METRICS_FILE}" \
         "${PROJECT_ROOT}/bin/homelab-energy" "$@"
 
 }
@@ -82,6 +86,14 @@ assert_success \
 assert_true \
     "ONBATT sends a notification" \
     grep -q "power lost" "${CURL_LOG}"
+
+assert_true \
+    "ONBATT is recorded as the last event in state" \
+    grep -q '"metrics:last_event": "ONBATT"' "${TEST_STATE_DIR}/state.json"
+
+assert_true \
+    "metrics are exported to the textfile path" \
+    grep -q 'event="ONBATT"' "${TEST_METRICS_FILE}"
 
 rm -f "${CURL_LOG}"
 
@@ -127,6 +139,8 @@ _run_cmdscript() {
         CONFIG_DIR="${TEST_CONFIG_DIR}" \
         SECRETS_CONFIG_LOCAL="${SECRET_FILE}" \
         SECRETS_CONFIG_SYSTEM="/nonexistent/secrets.env" \
+        STATE_DIR="${TEST_STATE_DIR}" \
+        METRICS_FILE="${TEST_METRICS_FILE}" \
         "${PROJECT_ROOT}/bin/homelab-energy-cmdscript" "$@"
 
 }
@@ -145,6 +159,6 @@ assert_true \
 # Cleanup
 ################################################################################
 
-rm -rf "${TEST_CONFIG_DIR}" "${STUB_BIN}" "${CURL_LOG}" "${SECRET_FILE}"
+rm -rf "${TEST_CONFIG_DIR}" "${TEST_STATE_DIR}" "${STUB_BIN}" "${CURL_LOG}" "${SECRET_FILE}" "${TEST_METRICS_FILE}"
 
 test_summary

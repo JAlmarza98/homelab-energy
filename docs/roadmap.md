@@ -15,7 +15,7 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 ## Current version
 
 ```text
-0.6.0-dev
+0.7.0-dev
 ```
 
 ## Milestones
@@ -28,7 +28,7 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 | v0.4.0 | ✅ in repo, ⏳ not yet installed on RP-node2 — `bin/homelab-energy event` wired to `upssched` → **first production use: power loss/restore/low battery alerts** |
 | v0.5.0 | ✅ `state.sh`: JSON via `jq`, atomic writes (tmp + `mv`), locking with `flock` |
 | v0.6.0 | ✅ Shutdown engine for hosts without a NUT client (configurable stages, timeouts, idempotency, `--dry-run`) |
-| v0.7.0 | Observability: `nut_exporter` on RP-node2, custom metrics via node_exporter textfile, Prometheus/Grafana on RP-node1 |
+| v0.7.0 | ✅ in repo, ⏳ not yet installed — Observability: `nut_exporter` on RP-node2, custom metrics via node_exporter textfile, Prometheus/Grafana on RP-node1 |
 | v0.8.0 | NAS (TrueNAS as a native NUT secondary) and new nodes |
 | v1.0.0 | Real power-cut test, documented runbook |
 
@@ -126,6 +126,35 @@ done from this repo.
   engine, called directly with host/command/timeout rather than wired to a
   config-driven host list, until a real non-NUT host exists to wire it to.
 * `lib/bootstrap.sh` now also sources `shutdown.sh`.
+
+## v0.7.0 delivered
+
+* `lib/metrics.sh`: `metrics_update NAME VALUE`/`metrics_increment NAME`
+  (backed by `state.sh`, a `metrics:` key prefix), `metrics_collect`
+  (Prometheus text format, with `# HELP`/`# TYPE`), `metrics_export`
+  (atomic tmp+`mv` write to `METRICS_FILE`, default
+  `/var/lib/node_exporter/textfile_collector/homelab_energy.prom`).
+* Exposes: last NUT event handled + its timestamp, notifications
+  sent/failed (via `notify.sh` calling `metrics_increment` itself, the only
+  place that actually sees whether `curl` succeeded), and every
+  `shutdown.sh` host's status (scanned from state, no separate host
+  registry needed).
+* `bin/homelab-energy` now calls `state_load`/`state_save` and
+  `metrics_update` around `_handle_event`, and `metrics_export` after —
+  guarded with `log_warn` on failure so a bad/missing textfile-collector
+  path never fails the hook.
+* `lib/bootstrap.sh` now also sources `metrics.sh`.
+* `templates/nut_exporter.service.example` (systemd unit for RP-node2),
+  `templates/prometheus.yml.example` and
+  `templates/docker-compose.observability.yml.example` (Prometheus+Grafana
+  for RP-node1), `templates/node_exporter_textfile.example` (wiring
+  `METRICS_FILE` to node_exporter's textfile collector directory).
+
+**Remaining for real production use**: actually install `nut_exporter` on
+RP-node2 and Prometheus+Grafana on RP-node1 from these templates, create
+the textfile collector directory with the right ownership, and point
+`METRICS_FILE` at it in `energy.conf`/`hosts/RP-node2.conf`. Manual
+deployment on real hardware, not done from this repo.
 
 ## Definition of done
 

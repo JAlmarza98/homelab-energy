@@ -41,6 +41,9 @@ _handle_event() {
         ;;
     esac
 
+    metrics_update last_event "${event}"
+    metrics_update last_event_at "$(timestamp_epoch)"
+
 }
 
 ################################################################################
@@ -59,7 +62,10 @@ main() {
             _usage
             exit 2
         }
+        state_load
         _handle_event "$2"
+        state_save
+        metrics_export || log_warn "Failed to export metrics"
         ;;
     *)
         _usage

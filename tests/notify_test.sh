@@ -31,17 +31,44 @@ chmod +x "${STUB_BIN}/curl"
 # logger.sh (for log_warn) and notify.sh. Isolated from the real network.
 _notify_run() {
 
-    PATH="${STUB_BIN}:${PATH}" \
+    PATH="${STUB_BIN}:${PATH}" PROJECT_ROOT="${PROJECT_ROOT}" \
         NOTIFICATIONS_ENABLED="${NOTIFICATIONS_ENABLED:-true}" \
         NTFY_TOPIC="${NTFY_TOPIC-homelab-test}" \
         NTFY_URL="${NTFY_URL-}" \
         NOTIFY_STUB_CURL_EXIT="${NOTIFY_STUB_CURL_EXIT:-0}" \
         bash -c '
-            source "'"${PROJECT_ROOT}"'/lib/logger.sh"
-            source "'"${PROJECT_ROOT}"'/lib/notify.sh"
+            source "${PROJECT_ROOT}/lib/logger.sh"
+            source "${PROJECT_ROOT}/lib/state.sh"
+            source "${PROJECT_ROOT}/lib/metrics.sh"
+            source "${PROJECT_ROOT}/lib/notify.sh"
             LOGGER_HANDLER_CONSOLE=false
             "$@"
         ' _notify_run "$@" >/dev/null 2>&1
+
+}
+
+# Same as _notify_run, but prints state_get "$1" after running "$@" (the
+# notify_* call), so tests can check the metrics counters it recorded.
+_notify_run_and_read_state() {
+
+    local state_key="$1"
+    shift
+
+    PATH="${STUB_BIN}:${PATH}" PROJECT_ROOT="${PROJECT_ROOT}" \
+        NOTIFICATIONS_ENABLED="${NOTIFICATIONS_ENABLED:-true}" \
+        NTFY_TOPIC="${NTFY_TOPIC-homelab-test}" \
+        NTFY_URL="${NTFY_URL-}" \
+        NOTIFY_STUB_CURL_EXIT="${NOTIFY_STUB_CURL_EXIT:-0}" \
+        STATE_KEY="${state_key}" \
+        bash -c '
+            source "${PROJECT_ROOT}/lib/logger.sh"
+            source "${PROJECT_ROOT}/lib/state.sh"
+            source "${PROJECT_ROOT}/lib/metrics.sh"
+            source "${PROJECT_ROOT}/lib/notify.sh"
+            LOGGER_HANDLER_CONSOLE=false
+            "$@" >/dev/null 2>&1
+            state_get "${STATE_KEY}"
+        ' _notify_run_and_read_state "$@"
 
 }
 
@@ -90,6 +117,20 @@ assert_true \
     grep -q "Priority: high" "${CURL_LOG}"
 
 ################################################################################
+# Metrics: a successful send increments notify_sent, a failure notify_failed
+################################################################################
+
+assert_equals \
+    "a successful send increments metrics:notify_sent" \
+    "1" \
+    "$(_notify_run_and_read_state metrics:notify_sent notify_info "ok")"
+
+assert_equals \
+    "a failing send increments metrics:notify_failed" \
+    "1" \
+    "$(NOTIFY_STUB_CURL_EXIT=1 _notify_run_and_read_state metrics:notify_failed notify_info "boom")"
+
+################################################################################
 # Fail-safe: a curl failure never propagates
 ################################################################################
 
@@ -99,12 +140,15 @@ rm -f "${CURL_LOG}"
 # abort the caller.
 OUTPUT="$(
     PATH="${STUB_BIN}:${PATH}" \
+        PROJECT_ROOT="${PROJECT_ROOT}" \
         NOTIFICATIONS_ENABLED=true NTFY_TOPIC=homelab-test \
         NOTIFY_STUB_CURL_EXIT=1 \
         bash -c '
             set -Eeuo pipefail
-            source "'"${PROJECT_ROOT}"'/lib/logger.sh"
-            source "'"${PROJECT_ROOT}"'/lib/notify.sh"
+            source "${PROJECT_ROOT}/lib/logger.sh"
+            source "${PROJECT_ROOT}/lib/state.sh"
+            source "${PROJECT_ROOT}/lib/metrics.sh"
+            source "${PROJECT_ROOT}/lib/notify.sh"
             LOGGER_HANDLER_CONSOLE=false
             notify_error "disk on fire"
             echo "survived"

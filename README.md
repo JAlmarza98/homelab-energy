@@ -17,6 +17,7 @@ Current implementation:
 * `bin/homelab-energy event` wired to `upssched` (power loss/restore/low battery)
 * Persistent state (`state.sh`, JSON + atomic writes + `flock`)
 * Shutdown engine for hosts without a NUT client (`shutdown.sh`, `--dry-run` by default)
+* Custom metrics for Prometheus via node_exporter's textfile collector (`metrics.sh`)
 * Modular logging framework
 * Lightweight testing framework
 * Development tooling (ShellCheck, shfmt, Make)
@@ -113,7 +114,6 @@ The project follows a few core principles.
 
 The next milestones are:
 
-* Observability: `nut_exporter`, Prometheus/Grafana dashboards
 * NAS integration (native NUT secondary)
 * Proxmox automation
 
