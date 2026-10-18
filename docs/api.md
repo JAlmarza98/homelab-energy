@@ -303,26 +303,43 @@ Shutdown policy belongs to the Shutdown Engine.
 
 ## Purpose
 
-Coordinate infrastructure shutdown.
+Coordinate shutdown of hosts that have no NUT client (Proxmox and NUT
+secondaries already shut down natively via NUT; this is for everything
+else, e.g. a managed switch or future non-NUT host).
 
-## Planned Public API
+## Public API
 
 ```bash
-shutdown_start
+shutdown_start HOST
 
-shutdown_cancel
+shutdown_cancel HOST
 
-shutdown_status
+shutdown_status HOST
 
-shutdown_execute
+shutdown_execute HOST COMMAND [TIMEOUT_SECONDS]
 ```
 
 ### Responsibilities
 
-* Execute shutdown policies.
-* Respect configured delays.
-* Execute ordered shutdown steps.
-* Track execution progress.
+* `shutdown_start`: idempotent — marks `HOST` `in_progress`; a second call
+  while already `in_progress`/`completed` is a no-op.
+* `shutdown_execute`: runs one stage/`COMMAND` (e.g. an `ssh` call) for
+  `HOST` with a timeout (default 30s, no GNU `timeout` dependency). A host
+  with several stages (a graceful attempt, then a harder one) is driven by
+  calling this once per stage. Idempotent: a `completed` host is skipped;
+  a `failed` one may be retried.
+* `shutdown_cancel`: marks `HOST` `cancelled`; `shutdown_execute` then
+  refuses to run. Can't undo a command that already ran.
+* `shutdown_status`: reads the state recorded by the above (via `state.sh`
+  — call `state_load` first). Empty string means never started.
+* `SHUTDOWN_DRY_RUN` defaults to `true` (CLAUDE.md safety rule: never run a
+  real shutdown command outside an explicit, deliberate opt-out). Set to
+  `false` to actually run `shutdown_execute`'s command.
+* Host lists and per-host commands/timeouts are not yet wired to config:
+  there is no real non-NUT host in the current topology (Proxmox, RP-node1
+  and the future NAS are all native NUT clients) — this is the generic
+  engine, called directly with a host/command/timeout once a real
+  consumer exists.
 
 ---
 

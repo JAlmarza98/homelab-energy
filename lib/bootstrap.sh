@@ -10,6 +10,7 @@ source "${PROJECT_ROOT}/lib/config.sh"
 source "${PROJECT_ROOT}/lib/nut.sh"
 source "${PROJECT_ROOT}/lib/notify.sh"
 source "${PROJECT_ROOT}/lib/state.sh"
+source "${PROJECT_ROOT}/lib/shutdown.sh"
 
 ################################################################################
 # Public API

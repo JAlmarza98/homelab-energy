@@ -15,7 +15,7 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 ## Current version
 
 ```text
-0.5.0-dev
+0.6.0-dev
 ```
 
 ## Milestones
@@ -27,7 +27,7 @@ NUT detects and decides; homelab-energy orchestrates, notifies and logs.
 | v0.3.0 | ✅ `notify.sh` (one provider first; secrets out of Git) + `nut.sh` (`upsc` wrapper, read-only) |
 | v0.4.0 | ✅ in repo, ⏳ not yet installed on RP-node2 — `bin/homelab-energy event` wired to `upssched` → **first production use: power loss/restore/low battery alerts** |
 | v0.5.0 | ✅ `state.sh`: JSON via `jq`, atomic writes (tmp + `mv`), locking with `flock` |
-| v0.6.0 | Shutdown engine for hosts without a NUT client (configurable stages, timeouts, idempotency, `--dry-run`) |
+| v0.6.0 | ✅ Shutdown engine for hosts without a NUT client (configurable stages, timeouts, idempotency, `--dry-run`) |
 | v0.7.0 | Observability: `nut_exporter` on RP-node2, custom metrics via node_exporter textfile, Prometheus/Grafana on RP-node1 |
 | v0.8.0 | NAS (TrueNAS as a native NUT secondary) and new nodes |
 | v1.0.0 | Real power-cut test, documented runbook |
@@ -110,6 +110,22 @@ done from this repo.
   `bin/homelab-energy` yet — no current event handler needs persisted state;
   that lands with whichever v0.6.0 shutdown engine step first needs it
   (e.g. "is a shutdown already in progress").
+
+## v0.6.0 delivered
+
+* `lib/shutdown.sh`: `shutdown_start HOST` (idempotent), `shutdown_execute
+  HOST COMMAND [TIMEOUT_SECONDS]` (one stage, portable timeout — no GNU
+  `timeout` dependency), `shutdown_cancel HOST`, `shutdown_status HOST`.
+  Backed by `state.sh` (call `state_load` first). "Stages" = calling
+  `shutdown_execute` once per stage (a graceful attempt, then a harder one),
+  not a baked-in multi-stage DSL.
+* `SHUTDOWN_DRY_RUN` defaults to `true` (CLAUDE.md safety rule): a real
+  command only runs with an explicit `SHUTDOWN_DRY_RUN=false`.
+* No real host needs this yet — Proxmox, RP-node1 and the future NAS are
+  all native NUT clients (see topology in `CLAUDE.md`); this is the generic
+  engine, called directly with host/command/timeout rather than wired to a
+  config-driven host list, until a real non-NUT host exists to wire it to.
+* `lib/bootstrap.sh` now also sources `shutdown.sh`.
 
 ## Definition of done
 

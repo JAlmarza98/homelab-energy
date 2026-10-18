@@ -32,7 +32,8 @@ tests/
 ├── nut_test.sh
 ├── notify_test.sh
 ├── homelab_energy_test.sh
-└── state_test.sh
+├── state_test.sh
+└── shutdown_test.sh
 ```
 
 Each module owns its own tests.
