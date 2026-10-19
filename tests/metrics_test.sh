@@ -109,6 +109,11 @@ assert_false \
     "metrics_export leaves no temp file behind" \
     bash -c 'ls "'"${PROJECT_ROOT}"'"/tests/tmp/.homelab_energy.* 2>/dev/null'
 
+assert_equals \
+    "the exported file is world-readable (node_exporter runs as a different user)" \
+    "644" \
+    "$(stat -c '%a' "${TEST_METRICS_FILE}" 2>/dev/null || stat -f '%Lp' "${TEST_METRICS_FILE}")"
+
 ################################################################################
 # Cleanup
 ################################################################################

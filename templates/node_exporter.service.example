@@ -1,0 +1,33 @@
+# Example systemd unit for node_exporter on RP-node2 (see CLAUDE.md
+# topology). Install at /etc/systemd/system/node_exporter.service, adjust
+# the binary path for your arch (aarch64/arm64 on a Raspberry Pi), then:
+#   sudo useradd --system --no-create-home --shell /usr/sbin/nologin node_exporter
+#   sudo mkdir -p /var/lib/node_exporter/textfile_collector
+#   sudo chown nut:nut /var/lib/node_exporter/textfile_collector
+#   sudo chmod 755 /var/lib/node_exporter/textfile_collector
+#   systemctl daemon-reload && systemctl enable --now node_exporter
+#
+# The textfile_collector directory is owned by "nut" (the user that
+# writes homelab_energy_*.prom via bin/homelab-energy-cmdscript, not
+# node_exporter's own service user) and world-readable (755): metrics.sh
+# writes each file 644 for exactly this reason — node_exporter runs as
+# its own unrelated user and only needs to read, never write, there.
+#
+# See templates/node_exporter_textfile.example for the METRICS_FILE
+# wiring on homelab-energy's side, and templates/nut_exporter.service.example
+# for the separate exporter that serves NUT/UPS metrics (ups.status,
+# battery.charge, ...) on a different port.
+
+[Unit]
+Description=Prometheus node_exporter
+After=network.target
+
+[Service]
+User=node_exporter
+Group=node_exporter
+ExecStart=/usr/local/bin/node_exporter \
+    --collector.textfile.directory=/var/lib/node_exporter/textfile_collector
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

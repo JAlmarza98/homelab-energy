@@ -101,7 +101,10 @@ metrics_collect() {
 }
 
 # Writes metrics_collect's output to METRICS_FILE atomically (tmp + mv),
-# same pattern as state_save.
+# same pattern as state_save. World-readable: node_exporter's textfile
+# collector almost always runs as a different, unrelated user from
+# whoever calls this (e.g. NUT's notify user), and mktemp's default mode
+# (600, owner-only) would otherwise make the file unreadable to it.
 metrics_export() {
 
     local dir
@@ -113,6 +116,7 @@ metrics_export() {
     tmp="$(mktemp "${dir}/.homelab_energy.XXXXXX")"
 
     metrics_collect >"${tmp}"
+    chmod 644 "${tmp}"
     mv "${tmp}" "${METRICS_FILE}"
 
 }

@@ -8,7 +8,9 @@
 # homelab-energy side (config/energy.conf or the environment):
 #   METRICS_FILE=/var/lib/node_exporter/textfile_collector/homelab_energy.prom
 #
-# That directory must exist and be writable by the user running
-# bin/homelab-energy (see CLAUDE.md: configuration in /etc/homelab-energy/,
-# state in /var/lib/homelab-energy/ — node_exporter's own data dir is
-# separate and owned by its own service user).
+# That directory must exist, be owned by the user running
+# bin/homelab-energy-cmdscript (e.g. "nut" on RP-node2 — see CLAUDE.md:
+# configuration in /etc/homelab-energy/, state in /var/lib/homelab-energy/),
+# and be world-readable (755) so node_exporter's own, separate service
+# user can read the files it writes. metrics.sh writes each file 644
+# for exactly this reason — see templates/node_exporter.service.example.

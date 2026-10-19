@@ -553,7 +553,10 @@ metrics_export
   modules already recorded.
 * `metrics_export`: writes `metrics_collect`'s output to `METRICS_FILE`
   (default `/var/lib/node_exporter/textfile_collector/homelab_energy.prom`)
-  atomically (tmp + `mv`, same pattern as `state_save`).
+  atomically (tmp + `mv`, same pattern as `state_save`), explicitly
+  `chmod 644` — node_exporter's own service user is normally unrelated to
+  whoever calls this (e.g. NUT's notify user), and `mktemp`'s default
+  mode (600, owner-only) would otherwise make the file unreadable to it.
 
 Initial target:
 
