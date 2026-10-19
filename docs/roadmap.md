@@ -30,7 +30,7 @@ the last fully-completed milestone.
 | v0.1.1 | ✅ Cleanup: fix the known bugs below, CI running `make check` in full |
 | v0.2.0 | ✅ `bootstrap.sh` + `config.sh` (parser, layers, int/bool validation, clear errors) + configurable logger |
 | v0.3.0 | ✅ `notify.sh` (one provider first; secrets out of Git) + `nut.sh` (`upsc` wrapper, read-only) |
-| v0.4.0 | ✅ in repo, ⏳ not yet installed on RP-node2 — `bin/homelab-energy event` wired to `upssched` → **first production use: power loss/restore/low battery alerts** |
+| v0.4.0 | ✅ verified on RP-node2 with a real power cut (2026-10-19), notifying over Telegram — `bin/homelab-energy event` wired to `upssched` → **first production use: power loss/restore/low battery alerts** |
 | v0.5.0 | ✅ `state.sh`: JSON via `jq`, atomic writes (tmp + `mv`), locking with `flock` |
 | v0.6.0 | ✅ Shutdown engine for hosts without a NUT client (configurable stages, timeouts, idempotency, `--dry-run`) |
 | v0.7.0 | ✅ in repo, ⏳ not yet installed — Observability: `nut_exporter` on RP-node2, custom metrics via node_exporter textfile, Prometheus/Grafana on RP-node1 |
@@ -98,13 +98,31 @@ the last fully-completed milestone.
 * `make lint`/`format`/`format-check` now also cover `bin/*` (previously
   only matched `*.sh`, silently skipping the new extension-less entry points).
 
-**Remaining for real production use**: install `templates/upssched.conf.example`
-as `/etc/nut/upssched.conf` on RP-node2 (adjusting the `CMDSCRIPT` path),
-confirm `upsmon.conf` has `NOTIFYCMD upssched-cmd` and `NOTIFYFLAG` set for
-`ONBATT`/`ONLINE`/`LOWBATT`, set real `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`
-in `/etc/homelab-energy/secrets.env` (chmod 600), and set `NOTIFICATIONS_ENABLED=true`
-in `energy.conf`. This is a manual deployment step on the Pi, not something
-done from this repo.
+**Deployed for real on RP-node2 (2026-10-19)**, with findings that took more
+than just "apply the template":
+
+* `NOTIFYCMD upssched-cmd` (the documented norm) silently did nothing on
+  this NUT 2.8.1 — no log, no error, no `CMDSCRIPT` call. `NOTIFYCMD
+  /usr/sbin/upssched` directly works, since this config only needs
+  immediate `EXECUTE` (no `START-TIMER`/`CANCEL-TIMER`), so `upssched-cmd`'s
+  daemon/pipe layer buys nothing here anyway. See `CLAUDE.md`'s
+  "Comportamiento de NUT ya medido" and the updated
+  `templates/upssched.conf.example`.
+* `upsmon` runs `NOTIFYCMD` as its own notify user (`nut` on this box, split
+  from the root process that does the real shutdown), not the checkout's
+  owner (`pi`). This needed: `chmod g+x` on `/home/pi` (a restrictive home
+  directory blocks traversal even when every subdirectory below it is
+  world-readable) with `nut` added to the `pi` group; `/etc/homelab-energy/
+  secrets.env` owned by `nut` (not `pi` — `config.sh`'s permission check
+  rejects a secrets file any other user can read, including the checkout's
+  owner); and `bin/homelab-energy-cmdscript` now pins
+  `STATE_DIR=/var/lib/homelab-energy` (`state.sh`'s repo-local default
+  isn't writable by `nut`).
+* Verified with a real ~30s power cut: `ONBATT` and `ONLINE` both fired,
+  both notified over Telegram, `state.json` updated correctly. The one
+  failure was metrics export (`/var/lib/node_exporter` doesn't exist
+  yet, that's v0.7.0's remaining deployment step below) — handled exactly
+  as designed: logged, didn't block anything else.
 
 ## v0.5.0 delivered
 

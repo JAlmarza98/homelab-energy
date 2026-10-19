@@ -4,21 +4,41 @@
 # real deploy path (CLAUDE.md: /home/pi/Projects/homelab-energy). This is a
 # template only: nothing here is applied automatically, and it is not a
 # substitute for upsmon.conf already having
-#   NOTIFYCMD /usr/bin/upssched-cmd
-# (path confirmed on RP-node2's Debian/Raspbian packaging — check yours
-# with `which upssched-cmd`, it varies by distro) and NOTIFYFLAG entries
-# with the EXEC bit for the events below, e.g.:
+#   NOTIFYCMD /usr/sbin/upssched
+# and NOTIFYFLAG entries with the EXEC bit for the events below, e.g.:
 #   NOTIFYFLAG ONLINE  SYSLOG+EXEC
 #   NOTIFYFLAG ONBATT  SYSLOG+EXEC
 #   NOTIFYFLAG LOWBATT SYSLOG+EXEC
 #
-# upsmon runs upssched-cmd as its own notify user (e.g. "nut", split from
+# NOTIFYCMD points at upssched directly, not the upssched-cmd wrapper
+# (NUT's documented norm). On RP-node2 (NUT 2.8.1), upssched-cmd's
+# daemon/pipe forwarding (meant for START-TIMER/CANCEL-TIMER) silently did
+# nothing — no log output, no CMDSCRIPT call, no error. Calling upssched
+# directly worked immediately, and this config only uses immediate
+# EXECUTE (no timers), so the daemon/pipe layer buys nothing here anyway.
+# upsmon sets the UPSNAME/NOTIFYTYPE env vars upssched needs; it takes no
+# CLI arguments. See CLAUDE.md's "Comportamiento de NUT ya medido" for
+# this finding. PIPEFN/LOCKFN below are kept because upssched requires
+# them to be set even when nothing uses the pipe.
+#
+# upsmon runs upssched as its own notify user (e.g. "nut", split from
 # the root process that does the actual shutdown), not whoever owns this
 # checkout. bin/homelab-energy-cmdscript pins STATE_DIR to
 # /var/lib/homelab-energy for that reason — see docs/runbook.md's
 # pre-test checklist for creating that directory with the right owner.
+# That same user also needs: execute (not necessarily read) access all
+# the way down to bin/homelab-energy-cmdscript (a restrictive home
+# directory like `chmod 700 ~pi` blocks this even if every subdirectory
+# below it is otherwise world-readable — grant the notify user's group
+# execute-only access on the home directory itself), and ownership of
+# /etc/homelab-energy/secrets.env (config.sh refuses to load a secrets
+# file that's readable by any other user, including the checkout's own
+# owner).
 
 CMDSCRIPT /home/pi/Projects/homelab-energy/bin/homelab-energy-cmdscript
+
+PIPEFN /var/run/nut/upssched.pipe
+LOCKFN /var/run/nut/upssched.lock
 
 AT ONBATT * EXECUTE ONBATT
 AT ONLINE * EXECUTE ONLINE

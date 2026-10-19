@@ -22,11 +22,25 @@ when you can be physically present for the whole thing.
 * `NOTIFICATIONS_ENABLED=true` and real `TELEGRAM_BOT_TOKEN`/
   `TELEGRAM_CHAT_ID` are set, and a test notification
   (`bin/homelab-energy event ONBATT` run manually, then `ONLINE` to clear
-  it) actually arrives in Telegram.
-* `/var/lib/homelab-energy` exists and is writable by whichever user
-  `upsmon` runs `NOTIFYCMD`/`upssched-cmd` as (`ps aux | grep upsmon` —
-  typically a dedicated user like `nut`, split from the root process that
-  does the real shutdown, not the account that owns this checkout):
+  it) actually arrives in Telegram. `/etc/homelab-energy/secrets.env`
+  must be **owned by** whichever user runs `NOTIFYCMD` (see below), not
+  just readable by them — `config.sh` refuses to load a secrets file any
+  other user can read, which includes the checkout's own owner if they
+  aren't the one invoking it.
+* `upsmon.conf` has `NOTIFYCMD /usr/sbin/upssched` (the binary directly —
+  `upssched-cmd` silently did nothing on this NUT 2.8.1, see `CLAUDE.md`)
+  and `NOTIFYFLAG ... EXEC` for `ONLINE`/`ONBATT`/`LOWBATT`; `upssched.conf`
+  has matching `PIPEFN`/`LOCKFN` set (required even though nothing uses
+  the pipe for immediate `EXECUTE` rules) and the right `CMDSCRIPT` path.
+* The checkout's home directory allows traversal for whichever user
+  `upsmon` runs `NOTIFYCMD` as (`ps aux | grep upsmon` — typically a
+  dedicated user like `nut`, split from the root process that does the
+  real shutdown, not the account that owns this checkout): a `chmod 700`
+  home directory blocks it even when every subdirectory below it is
+  world-readable. Fix: add that user to the checkout owner's group and
+  grant the group execute-only (no read) on the home directory, e.g.
+  `sudo usermod -aG pi nut && sudo chmod 710 /home/pi`.
+* `/var/lib/homelab-energy` exists and is writable by that same user:
   ```
   sudo mkdir -p /var/lib/homelab-energy
   sudo chown <that-user>:<a-group-you-can-read-with> /var/lib/homelab-energy
