@@ -65,7 +65,15 @@ Todo (incluidos switch y OpenWRT) está enchufado al SAI.
   propio exporter). `--web.listen-address` solo existe como flag de CLI,
   no tiene variable de entorno equivalente (verificado contra su
   `--help` real, v3.3.0) — a diferencia de `--nut.server`, que sí la
-  tiene (`NUT_EXPORTER_SERVER`).
+  tiene (`NUT_EXPORTER_SERVER`). `--nut.vars_enable` **sustituye** la
+  lista por defecto, no la amplía — hay que escribirla completa si se
+  quiere añadir algo (`battery.runtime` añadido para el dashboard de
+  Grafana, confirmado disponible con `upsc apc@localhost`).
+- El SAI (APC Back-UPS RS 1600MI) solo reporta `ups.realpower.nominal`
+  (960, vatiaje nominal fijo de fábrica), nunca `ups.realpower` en vivo —
+  normal en la gama Back-UPS, que no mide consumo real instantáneo. Un
+  panel de Grafana atado a `ups.realpower` se queda sin datos siempre,
+  no es un fallo de configuración.
 
 ## Reglas de seguridad (obligatorias)
 
