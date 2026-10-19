@@ -80,6 +80,15 @@ embed `event` as a literal extra argument. This shim exists only to adapt
 that one-argument call into `homelab-energy event <name>`. See
 `templates/upssched.conf.example` for the `upssched.conf` wiring.
 
+Also pins `STATE_DIR=/var/lib/homelab-energy` (unless already set) before
+calling `homelab-energy`: `upsmon` runs `NOTIFYCMD`/`upssched-cmd` as its
+own notify user (e.g. `nut` on Debian/Raspbian, split from the root
+process that does the actual shutdown), not whoever owns the git
+checkout — `state.sh`'s repo-local default (`${PROJECT_ROOT}/state`,
+convenient for dev/tests) usually isn't writable by that user. That
+directory must exist and be writable by whichever user runs
+`upssched-cmd` — see `docs/runbook.md`'s pre-test checklist.
+
 ---
 
 # logger.sh

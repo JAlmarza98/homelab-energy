@@ -23,6 +23,19 @@ when you can be physically present for the whole thing.
   `TELEGRAM_CHAT_ID` are set, and a test notification
   (`bin/homelab-energy event ONBATT` run manually, then `ONLINE` to clear
   it) actually arrives in Telegram.
+* `/var/lib/homelab-energy` exists and is writable by whichever user
+  `upsmon` runs `NOTIFYCMD`/`upssched-cmd` as (`ps aux | grep upsmon` —
+  typically a dedicated user like `nut`, split from the root process that
+  does the real shutdown, not the account that owns this checkout):
+  ```
+  sudo mkdir -p /var/lib/homelab-energy
+  sudo chown <that-user>:<a-group-you-can-read-with> /var/lib/homelab-energy
+  sudo chmod 750 /var/lib/homelab-energy
+  ```
+  Without this, `bin/homelab-energy-cmdscript`'s real, `upssched`-triggered
+  runs fail at `state_load`/`state_save` even though a manual run by your
+  own user works fine (it uses the repo-local `state/` instead, which
+  that user can't write to).
 * Battery is healthy enough for the test to reach LOWBATT without the
   SAI's own internal low-voltage cutoff kicking in first (battery is from
   2020-03 per `CLAUDE.md` — if `upsc apc@localhost battery.charge` is

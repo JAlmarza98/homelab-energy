@@ -9,4 +9,10 @@ set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# upsmon runs this as its own notify user (e.g. "nut"), not whoever owns the
+# git checkout — state.sh's repo-local default (good for dev/tests) isn't
+# writable by that user. Pin the production path CLAUDE.md documents,
+# unless the caller (e.g. a test) already set one.
+export STATE_DIR="${STATE_DIR:-/var/lib/homelab-energy}"
+
 exec "${SCRIPT_DIR}/homelab-energy" event "${1:-}"

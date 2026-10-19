@@ -4,8 +4,19 @@
 # real deploy path (CLAUDE.md: /home/pi/Projects/homelab-energy). This is a
 # template only: nothing here is applied automatically, and it is not a
 # substitute for upsmon.conf already having
-#   NOTIFYCMD /usr/sbin/upssched-cmd
-# and NOTIFYFLAG entries enabled for the events below.
+#   NOTIFYCMD /usr/bin/upssched-cmd
+# (path confirmed on RP-node2's Debian/Raspbian packaging — check yours
+# with `which upssched-cmd`, it varies by distro) and NOTIFYFLAG entries
+# with the EXEC bit for the events below, e.g.:
+#   NOTIFYFLAG ONLINE  SYSLOG+EXEC
+#   NOTIFYFLAG ONBATT  SYSLOG+EXEC
+#   NOTIFYFLAG LOWBATT SYSLOG+EXEC
+#
+# upsmon runs upssched-cmd as its own notify user (e.g. "nut", split from
+# the root process that does the actual shutdown), not whoever owns this
+# checkout. bin/homelab-energy-cmdscript pins STATE_DIR to
+# /var/lib/homelab-energy for that reason — see docs/runbook.md's
+# pre-test checklist for creating that directory with the right owner.
 
 CMDSCRIPT /home/pi/Projects/homelab-energy/bin/homelab-energy-cmdscript
 
