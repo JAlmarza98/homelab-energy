@@ -33,7 +33,7 @@ the last fully-completed milestone.
 | v0.4.0 | ✅ verified on RP-node2 with a real power cut (2026-10-19), notifying over Telegram — `bin/homelab-energy event` wired to `upssched` → **first production use: power loss/restore/low battery alerts** |
 | v0.5.0 | ✅ `state.sh`: JSON via `jq`, atomic writes (tmp + `mv`), locking with `flock` |
 | v0.6.0 | ✅ Shutdown engine for hosts without a NUT client (configurable stages, timeouts, idempotency, `--dry-run`) |
-| v0.7.0 | ✅ `node_exporter`+textfile and `nut_exporter` verified live on RP-node2 (2026-10-19), ⏳ Prometheus/Grafana on RP-node1 still pending — Observability |
+| v0.7.0 | ✅ fully deployed and verified live (2026-10-19) — Observability: `node_exporter`+textfile and `nut_exporter` on RP-node2, scraped by RP-node1's existing Prometheus, Grafana dashboards with real data |
 | v0.8.0 | 🚫 blocked — NAS (TrueNAS as a native NUT secondary) and new nodes |
 | v1.0.0 | ✅ runbook, ⏳ the real power-cut test itself is manual/physical |
 
@@ -184,11 +184,31 @@ than just "apply the template":
   for RP-node1), `templates/node_exporter_textfile.example` (wiring
   `METRICS_FILE` to node_exporter's textfile collector directory).
 
-**Remaining for real production use**: actually install `nut_exporter` on
-RP-node2 and Prometheus+Grafana on RP-node1 from these templates, create
-the textfile collector directory with the right ownership, and point
-`METRICS_FILE` at it in `energy.conf`/`hosts/RP-node2.conf`. Manual
-deployment on real hardware, not done from this repo.
+**Deployed for real (2026-10-19)**, with findings not fixable from this
+repo alone:
+
+* `node_exporter` and `nut_exporter` installed fresh on RP-node2 as
+  systemd services (own system users, not reusing `nut`). The textfile
+  collector directory is owned by `nut` (the writer) and world-readable
+  (`755`) rather than shared-group, because `metrics_export` now
+  `chmod 644`s its output — `mktemp`'s default `600` would otherwise be
+  unreadable by `node_exporter`'s own, unrelated service user (fixed in
+  `lib/metrics.sh`, see the commit history).
+* RP-node1 already ran Prometheus/Grafana/Alertmanager/Uptime Kuma in
+  Docker (managed via Arcane) — `templates/docker-compose.observability.yml.example`
+  was never applied; `templates/prometheus.yml.example`'s two new jobs
+  (`rp_node2`, `nut`) were added to the real, existing
+  `/home/pi/monitoring-stack/prometheus/prometheus.yml` instead, matching
+  its own job-naming convention. See `CLAUDE.md`'s topology section for
+  the full real config location and the `docker restart prometheus`
+  reload gotcha (no lifecycle API).
+* `nut_exporter`'s `--nut.vars_enable` **replaces**, not appends to, the
+  built-in default — had to list it in full to add `battery.runtime` for
+  Grafana's Runtime panel. `ups.realpower` was deliberately left out:
+  this UPS only reports `ups.realpower.nominal` (a fixed rated value),
+  never a live reading, so a Power panel stays empty regardless.
+* Grafana dashboard: `19308` ("Prometheus NUT Exporter for DRuggeri"),
+  imported as-is.
 
 ## v0.8.0: blocked
 

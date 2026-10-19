@@ -27,6 +27,27 @@ NUT detecta y decide; homelab-energy orquesta, avisa y registra.
 
 Todo (incluidos switch y OpenWRT) está enchufado al SAI.
 
+### RP-node1: stack de observabilidad (ya existía, verificado 2026-10-19)
+
+Prometheus, Grafana, Alertmanager, `node-exporter` (propio) y Uptime Kuma
+corren en Docker, gestionados con Arcane (`ghcr.io/getarcaneapp/agent`).
+No hace falta desplegar nada desde cero — las plantillas `templates/
+docker-compose.observability.yml.example` y `prometheus.yml.example` de
+este repo son solo referencia genérica para una instalación nueva.
+
+- Config real de Prometheus: `/home/pi/monitoring-stack/prometheus/prometheus.yml`
+  (bind-mount a `/etc/prometheus` dentro del contenedor `prometheus`).
+  Jobs existentes: `raspberry` (su propio `node-exporter`, por nombre de
+  contenedor Docker, no IP), `proxmox`, `proxmox-pve` (vía un exporter en
+  `10.0.0.20:9221`). Añadidos por homelab-energy: `rp_node2`
+  (`10.0.0.21:9100`) y `nut` (`10.0.0.21:9199`, `metrics_path: /ups_metrics`).
+- Recargar tras editar: el contenedor `prometheus` **no** tiene la
+  lifecycle API habilitada (`curl -X POST .../-/reload` falla) — hace
+  falta `docker restart prometheus`. No pierde histórico: los datos
+  viven en un volumen Docker aparte, no en el bind-mount de config.
+- Dashboard de Grafana para NUT: ID `19308` ("Prometheus NUT Exporter for
+  DRuggeri"), importado tal cual desde grafana.com.
+
 ## Comportamiento de NUT ya medido (no asumir otra cosa)
 
 - Batería baja (LB) configurada en el SAI: `battery.runtime.low=1200`, `battery.charge.low=30`.
@@ -125,7 +146,7 @@ versión y qué queda pendiente de instalación manual en hardware real.
 | v0.4.0 | `bin/homelab-energy event` enganchado a `upssched` → **primer uso en producción: avisos de corte/vuelta/batería baja** | ✅ verificado en RP-node2 con corte real (2026-10-19), notificaciones por Telegram |
 | v0.5.0 | `state.sh`: JSON con `jq`, escritura atómica (tmp + `mv`), lock con `flock` | ✅ |
 | v0.6.0 | Shutdown engine para equipos sin NUT (etapas configurables, timeouts, idempotencia, `--dry-run`) | ✅ (sin host real aún que lo necesite) |
-| v0.7.0 | Observabilidad: `nut_exporter` en RP-node2, métricas propias vía textfile de node_exporter, Prometheus/Grafana en RP-node1 | ✅ `node_exporter`+textfile y `nut_exporter` verificados en real en RP-node2 (2026-10-19), ⏳ falta Prometheus/Grafana en RP-node1 |
+| v0.7.0 | Observabilidad: `nut_exporter` en RP-node2, métricas propias vía textfile de node_exporter, Prometheus/Grafana en RP-node1 | ✅ completo y verificado en real (2026-10-19): `node_exporter`+textfile, `nut_exporter`, scrapeado por el Prometheus ya existente en RP-node1, dashboards de Grafana con datos reales |
 | v0.8.0 | NAS (TrueNAS como secondary NUT nativo) y nuevos nodos | 🚫 bloqueado — no hay NAS real en la topología todavía |
 | v1.0.0 | Prueba real con corte de red, runbook documentado | ✅ runbook (`docs/runbook.md`), ⏳ la prueba física queda pendiente |
 

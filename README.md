@@ -169,10 +169,11 @@ Kept to the minimum needed by the modules that actually use them.
 
 The core framework (bootstrap, layered config, logging, NUT reads,
 notifications, persistent state, a generic shutdown engine, and
-Prometheus metrics) is implemented and tested, but **not yet installed
-on real hardware** — see `docs/roadmap.md` for the exact milestone
-breakdown of what's done in the repo versus what's still a manual
-deployment step on RP-node1/RP-node2.
+Prometheus metrics) is implemented, tested, and **deployed and verified
+live on RP-node1/RP-node2** — real power cuts fire real Telegram
+notifications, and real UPS/system metrics flow into the existing
+Grafana. See `docs/roadmap.md` for the exact milestone breakdown and
+`CLAUDE.md` for the real topology/deployment findings.
 
 NAS integration is blocked until a real NAS exists in the topology, and
 the real power-cut test (`docs/runbook.md`) is a physical action that
