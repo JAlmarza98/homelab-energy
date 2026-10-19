@@ -33,7 +33,7 @@ the last fully-completed milestone.
 | v0.4.0 | ✅ verified on RP-node2 with a real power cut (2026-10-19), notifying over Telegram — `bin/homelab-energy event` wired to `upssched` → **first production use: power loss/restore/low battery alerts** |
 | v0.5.0 | ✅ `state.sh`: JSON via `jq`, atomic writes (tmp + `mv`), locking with `flock` |
 | v0.6.0 | ✅ Shutdown engine for hosts without a NUT client (configurable stages, timeouts, idempotency, `--dry-run`) |
-| v0.7.0 | ✅ in repo, ⏳ not yet installed — Observability: `nut_exporter` on RP-node2, custom metrics via node_exporter textfile, Prometheus/Grafana on RP-node1 |
+| v0.7.0 | ✅ `node_exporter`+textfile verified live on RP-node2 (2026-10-19), ⏳ `nut_exporter` + Prometheus/Grafana on RP-node1 still pending — Observability |
 | v0.8.0 | 🚫 blocked — NAS (TrueNAS as a native NUT secondary) and new nodes |
 | v1.0.0 | ✅ runbook, ⏳ the real power-cut test itself is manual/physical |
 

@@ -111,7 +111,7 @@ versión y qué queda pendiente de instalación manual en hardware real.
 | v0.4.0 | `bin/homelab-energy event` enganchado a `upssched` → **primer uso en producción: avisos de corte/vuelta/batería baja** | ✅ verificado en RP-node2 con corte real (2026-10-19), notificaciones por Telegram |
 | v0.5.0 | `state.sh`: JSON con `jq`, escritura atómica (tmp + `mv`), lock con `flock` | ✅ |
 | v0.6.0 | Shutdown engine para equipos sin NUT (etapas configurables, timeouts, idempotencia, `--dry-run`) | ✅ (sin host real aún que lo necesite) |
-| v0.7.0 | Observabilidad: `nut_exporter` en RP-node2, métricas propias vía textfile de node_exporter, Prometheus/Grafana en RP-node1 | ✅ en el repo, ⏳ falta instalar en los Pi |
+| v0.7.0 | Observabilidad: `nut_exporter` en RP-node2, métricas propias vía textfile de node_exporter, Prometheus/Grafana en RP-node1 | ✅ `node_exporter`+textfile verificado en real en RP-node2 (2026-10-19), ⏳ falta `nut_exporter` y Prometheus/Grafana en RP-node1 |
 | v0.8.0 | NAS (TrueNAS como secondary NUT nativo) y nuevos nodos | 🚫 bloqueado — no hay NAS real en la topología todavía |
 | v1.0.0 | Prueba real con corte de red, runbook documentado | ✅ runbook (`docs/runbook.md`), ⏳ la prueba física queda pendiente |
 
