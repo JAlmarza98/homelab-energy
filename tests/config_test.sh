@@ -138,18 +138,18 @@ assert_false \
 
 SECRET_FILE="${PROJECT_ROOT}/tests/tmp/secrets.env"
 
-echo "NTFY_TOPIC=homelab-test" >"${SECRET_FILE}"
+echo "TELEGRAM_BOT_TOKEN=homelab-test" >"${SECRET_FILE}"
 chmod 600 "${SECRET_FILE}"
 
 assert_equals \
     "a private secrets file is loaded" \
     "homelab-test" \
-    "$(SECRETS_CONFIG_LOCAL="${SECRET_FILE}" _config_run "${TEST_CONFIG_DIR}" config_get NTFY_TOPIC)"
+    "$(SECRETS_CONFIG_LOCAL="${SECRET_FILE}" _config_run "${TEST_CONFIG_DIR}" config_get TELEGRAM_BOT_TOKEN)"
 
 chmod 644 "${SECRET_FILE}"
 
 _config_run_with_loose_secret() {
-    SECRETS_CONFIG_LOCAL="${SECRET_FILE}" _config_run "${TEST_CONFIG_DIR}" config_get NTFY_TOPIC
+    SECRETS_CONFIG_LOCAL="${SECRET_FILE}" _config_run "${TEST_CONFIG_DIR}" config_get TELEGRAM_BOT_TOKEN
 }
 
 assert_false \

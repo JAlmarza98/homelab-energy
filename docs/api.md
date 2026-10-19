@@ -204,7 +204,7 @@ Keys actually read from `config/*.conf` / secrets files:
 
 | Key | First set in | Type | Default | Consumed by | Status |
 |---|---|---|---|---|---|
-| `PROJECT_NAME` | `defaults.conf` | string | `homelab-energy` | `notify.sh` (ntfy `Title` header) | active |
+| `PROJECT_NAME` | `defaults.conf` | string | `homelab-energy` | `notify.sh` (message prefix) | active |
 | `UPS_NAME` | `defaults.conf` | string | `ups` | `nut.sh` (`upsc` target) | active |
 | `SHUTDOWN_DELAY` | `defaults.conf` | int | `60` | — | reserved — `shutdown.sh`'s `shutdown_execute` takes its timeout as a function argument instead; nothing reads this yet |
 | `LOG_LEVEL` | `defaults.conf` | `DEBUG`\|`INFO`\|`SUCCESS`\|`WARN`\|`ERROR` | `WARN` | `bootstrap()` → `logger_set_level` | active |
@@ -215,9 +215,8 @@ Keys actually read from `config/*.conf` / secrets files:
 | `PROXMOX_IP` | `hosts/<hostname>.conf` | string | (unset) | — | reserved for future Proxmox integration |
 | `NAS_IP` | `hosts/<hostname>.conf` | string | (unset) | — | reserved; blocked (v0.8.0) |
 | `NUT_SERVER` | `hosts/<hostname>.conf` | string | `localhost` (fallback inside `nut.sh`, not a config default) | `nut.sh` (`upsc` target) | active |
-| `NTFY_URL` | secrets | string | `https://ntfy.sh` (fallback inside `notify.sh`) | `notify.sh` | active, secret |
-| `NTFY_TOPIC` | secrets | string | (unset — notifications silently skip without it) | `notify.sh` | active, secret |
-| `NTFY_TOKEN` | secrets | string | (unset — optional `Authorization: Bearer` header) | `notify.sh` | active, secret |
+| `TELEGRAM_BOT_TOKEN` | secrets | string | (unset — notifications silently skip without it) | `notify.sh` (Bot API URL) | active, secret |
+| `TELEGRAM_CHAT_ID` | secrets | string | (unset — notifications silently skip without it) | `notify.sh` | active, secret |
 
 Environment-only overrides (never read from a `.conf` file — set as an
 actual environment variable, mainly for tests or an unusual deployment):
@@ -495,11 +494,18 @@ notify_success MESSAGE
 
 ### Behaviour
 
-* Provider: `ntfy`, called directly over HTTP (no dependency on any alerting
-  stack, since a power event must still notify if that stack is down).
-* Configured via `NOTIFICATIONS_ENABLED` (energy.conf) and `NTFY_URL` /
-  `NTFY_TOPIC` / `NTFY_TOKEN` (secrets, never in Git — see
-  `config/secrets.env.example`).
+* Provider: Telegram Bot API (`https://api.telegram.org/bot<TOKEN>/sendMessage`),
+  called directly over HTTP — no dependency on any alerting stack (e.g.
+  Alertmanager), since a power event must still notify even if that stack
+  is down. Reuses an existing bot/chat (e.g. one already used by other
+  local monitoring) rather than requiring a dedicated one.
+* Each severity prepends an emoji to the message (`notify_info` ℹ️,
+  `notify_success` ✅, `notify_warning` ⚠️, `notify_error` 🚨) — Telegram
+  has no equivalent of ntfy's `Priority`/`Tags` headers.
+* Configured via `NOTIFICATIONS_ENABLED` (energy.conf) and
+  `TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID` (secrets, never in Git — see
+  `config/secrets.env.example`). Missing either one skips the send
+  (logged via `log_warn`), it doesn't error.
 * Fails safe: a notification error is logged via `log_warn` and never
   propagates, so it can never block or delay a shutdown.
 

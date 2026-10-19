@@ -30,7 +30,7 @@ nut.sh
     UPS communication (read-only)
 
 notify.sh
-    Notifications (ntfy)
+    Notifications (Telegram)
 
 shutdown.sh
     Shutdown of non-NUT hosts
@@ -382,8 +382,8 @@ Current runtime dependencies, and exactly when each is required:
   `state.sh`, so it needs both too). Checked on demand
   (`_state_require_jq`), not at `bootstrap()` time.
 * `curl` — `notify.sh`, only once a notification is actually about to be
-  sent (`NOTIFICATIONS_ENABLED=true` and `NTFY_TOPIC` set). A disabled
-  install never needs it.
+  sent (`NOTIFICATIONS_ENABLED=true` and `TELEGRAM_BOT_TOKEN`/
+  `TELEGRAM_CHAT_ID` set). A disabled install never needs it.
 * `upsc` — `nut.sh`, every call. No explicit check: missing `upsc`
   surfaces as the same failure as an unreachable UPS.
 

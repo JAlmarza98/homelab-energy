@@ -19,9 +19,10 @@ when you can be physically present for the whole thing.
   would make `nut-driver@apc` refuse to start cleanly).
 * `systemctl status nut-server nut-monitor nut-driver@apc` clean on
   RP-node2; `systemctl status nut-monitor` clean on Proxmox and RP-node1.
-* `NOTIFICATIONS_ENABLED=true` and a real `NTFY_TOPIC` are set, and a test
-  notification (`bin/homelab-energy event ONBATT` run manually, then
-  `ONLINE` to clear it) actually arrives.
+* `NOTIFICATIONS_ENABLED=true` and real `TELEGRAM_BOT_TOKEN`/
+  `TELEGRAM_CHAT_ID` are set, and a test notification
+  (`bin/homelab-energy event ONBATT` run manually, then `ONLINE` to clear
+  it) actually arrives in Telegram.
 * Battery is healthy enough for the test to reach LOWBATT without the
   SAI's own internal low-voltage cutoff kicking in first (battery is from
   2020-03 per `CLAUDE.md` — if `upsc apc@localhost battery.charge` is
@@ -74,8 +75,9 @@ secondary shut down).
 * A secondary stuck in a shutdown loop: cleanup step 1 (primary first),
   then step 2. Don't restart a secondary's `nut-monitor` before the
   primary is confirmed clean.
-* No notification arrived: check `NOTIFICATIONS_ENABLED`, `NTFY_TOPIC`,
-  and that `metrics:notify_failed` (via `metrics_collect`) incremented —
+* No notification arrived: check `NOTIFICATIONS_ENABLED`,
+  `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`, and that `metrics:notify_failed`
+  (via `metrics_collect`) incremented —
   `notify.sh` fails safe and never blocks the shutdown sequence, so a
   dead notification channel never explains a shutdown that didn't happen.
 * Proxmox didn't shut down in time: check the SAI's actual

@@ -400,9 +400,10 @@ Verify, against a **stubbed `curl`** on a throwaway `PATH` (never a real
 HTTP request):
 
 * Disabled notifications (`NOTIFICATIONS_ENABLED=false`) and a missing
-  `NTFY_TOPIC` both skip `curl` entirely.
-* An enabled, configured send calls `curl` with the message and the
-  right `Priority` header.
+  `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` both skip `curl` entirely.
+* An enabled, configured send calls `curl` against the Telegram Bot API
+  URL with the token, the chat id, and the message (with its severity
+  emoji).
 * `metrics:notify_sent`/`metrics:notify_failed` increment correctly
   depending on the stub's exit code.
 * **Fail-safe, under `set -e`**: a failing `curl` (stub exits 1) never

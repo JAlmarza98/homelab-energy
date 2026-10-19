@@ -13,7 +13,7 @@ Current implementation:
 * Bootstrap framework
 * Layered configuration (`defaults.conf` → `energy.conf` → `hosts/<hostname>.conf` → secrets)
 * UPS monitoring (Network UPS Tools, read-only)
-* Alerting and notifications (ntfy)
+* Alerting and notifications (Telegram)
 * `bin/homelab-energy event` wired to `upssched` (power loss/restore/low battery)
 * Persistent state (`state.sh`, JSON + atomic writes + `flock`)
 * Shutdown engine for hosts without a NUT client (`shutdown.sh`, `--dry-run` by default)
@@ -95,10 +95,11 @@ bin/homelab-energy event ONLINE    # power restored
 bin/homelab-energy event LOWBATT   # battery critically low
 ```
 
-Every call logs, notifies (if `NOTIFICATIONS_ENABLED=true` and a real
-`NTFY_TOPIC` are configured), records the event in `state/state.json`, and
-exports metrics to `METRICS_FILE` for Prometheus. See `docs/api.md` for
-the full `bin/homelab-energy` contract and every module's public API.
+Every call logs, notifies via Telegram (if `NOTIFICATIONS_ENABLED=true` and
+a real `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` are configured), records the
+event in `state/state.json`, and exports metrics to `METRICS_FILE` for
+Prometheus. See `docs/api.md` for the full `bin/homelab-energy` contract
+and every module's public API.
 
 ---
 

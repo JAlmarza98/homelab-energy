@@ -10,7 +10,7 @@ source "${PROJECT_ROOT}/lib/test.sh"
 test_init "bin/homelab-energy"
 
 ################################################################################
-# Fixtures: an isolated config (notifications on, fake ntfy topic) and a
+# Fixtures: an isolated config (notifications on, fake Telegram bot) and a
 # stubbed curl. Never touches the real config, hardware or network.
 ################################################################################
 
@@ -37,7 +37,10 @@ EOF
 touch "${TEST_CONFIG_DIR}/hosts/$(hostname).conf"
 
 SECRET_FILE="${PROJECT_ROOT}/tests/tmp/homelab-energy-secrets.env"
-echo "NTFY_TOPIC=homelab-test" >"${SECRET_FILE}"
+cat >"${SECRET_FILE}" <<'EOF'
+TELEGRAM_BOT_TOKEN=test-token
+TELEGRAM_CHAT_ID=test-chat
+EOF
 chmod 600 "${SECRET_FILE}"
 
 cat >"${STUB_BIN}/curl" <<EOF

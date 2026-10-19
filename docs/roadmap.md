@@ -69,9 +69,15 @@ the last fully-completed milestone.
   see `docs/api.md`'s `nut.sh` section for why it's deferred indefinitely,
   not tied to a version: the event-driven design never needed a poll.
 * `lib/notify.sh`: `notify_info`/`notify_success`/`notify_warning`/`notify_error`
-  push to `ntfy` directly over HTTP — no Alertmanager hop, so a power event can
-  still notify even if the rest of the monitoring stack is down. Fails safe: a
-  `curl` error is logged and never propagates, so it can't block a shutdown.
+  push directly over HTTP to an alerting channel — no Alertmanager hop, so a
+  power event can still notify even if the rest of the monitoring stack is
+  down. Fails safe: a `curl` error is logged and never propagates, so it
+  can't block a shutdown. **Amendment (real RP-node2 deployment, see
+  below)**: originally shipped against `ntfy`; swapped to the Telegram Bot
+  API before going live, reusing the same bot/chat already used by Kuma/
+  Alertmanager — same direct-HTTP, no-local-dependency design, just a
+  different provider. See `docs/api.md`'s `notify.sh` section for the
+  current (Telegram) behaviour.
 * `lib/config.sh`: added an optional secrets layer (`.env` locally or
   `/etc/homelab-energy/secrets.env` in production) loaded after `hosts/`, with
   a hard refusal if the file is readable by group/others. Secrets never land
@@ -95,8 +101,8 @@ the last fully-completed milestone.
 **Remaining for real production use**: install `templates/upssched.conf.example`
 as `/etc/nut/upssched.conf` on RP-node2 (adjusting the `CMDSCRIPT` path),
 confirm `upsmon.conf` has `NOTIFYCMD upssched-cmd` and `NOTIFYFLAG` set for
-`ONBATT`/`ONLINE`/`LOWBATT`, set real `NTFY_TOPIC`/`NTFY_URL` in
-`/etc/homelab-energy/secrets.env` (chmod 600), and set `NOTIFICATIONS_ENABLED=true`
+`ONBATT`/`ONLINE`/`LOWBATT`, set real `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID`
+in `/etc/homelab-energy/secrets.env` (chmod 600), and set `NOTIFICATIONS_ENABLED=true`
 in `energy.conf`. This is a manual deployment step on the Pi, not something
 done from this repo.
 

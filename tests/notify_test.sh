@@ -28,13 +28,14 @@ EOF
 chmod +x "${STUB_BIN}/curl"
 
 # Runs "$@" (a notify_* call) with the stub curl on PATH, after sourcing
-# logger.sh (for log_warn) and notify.sh. Isolated from the real network.
+# logger.sh (for log_warn) and notify.sh. Isolated from the real network and
+# from any real Telegram bot.
 _notify_run() {
 
     PATH="${STUB_BIN}:${PATH}" PROJECT_ROOT="${PROJECT_ROOT}" \
         NOTIFICATIONS_ENABLED="${NOTIFICATIONS_ENABLED:-true}" \
-        NTFY_TOPIC="${NTFY_TOPIC-homelab-test}" \
-        NTFY_URL="${NTFY_URL-}" \
+        TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN-test-token}" \
+        TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID-test-chat}" \
         NOTIFY_STUB_CURL_EXIT="${NOTIFY_STUB_CURL_EXIT:-0}" \
         bash -c '
             source "${PROJECT_ROOT}/lib/logger.sh"
@@ -56,8 +57,8 @@ _notify_run_and_read_state() {
 
     PATH="${STUB_BIN}:${PATH}" PROJECT_ROOT="${PROJECT_ROOT}" \
         NOTIFICATIONS_ENABLED="${NOTIFICATIONS_ENABLED:-true}" \
-        NTFY_TOPIC="${NTFY_TOPIC-homelab-test}" \
-        NTFY_URL="${NTFY_URL-}" \
+        TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN-test-token}" \
+        TELEGRAM_CHAT_ID="${TELEGRAM_CHAT_ID-test-chat}" \
         NOTIFY_STUB_CURL_EXIT="${NOTIFY_STUB_CURL_EXIT:-0}" \
         STATE_KEY="${state_key}" \
         bash -c '
@@ -85,19 +86,27 @@ assert_false \
     test -f "${CURL_LOG}"
 
 ################################################################################
-# Missing topic never calls curl
+# Missing bot token / chat id never calls curl
 ################################################################################
 
 rm -f "${CURL_LOG}"
 
-NTFY_TOPIC="" _notify_run notify_info "test"
+TELEGRAM_BOT_TOKEN="" _notify_run notify_info "test"
 
 assert_false \
-    "missing NTFY_TOPIC skips curl" \
+    "missing TELEGRAM_BOT_TOKEN skips curl" \
+    test -f "${CURL_LOG}"
+
+rm -f "${CURL_LOG}"
+
+TELEGRAM_CHAT_ID="" _notify_run notify_info "test"
+
+assert_false \
+    "missing TELEGRAM_CHAT_ID skips curl" \
     test -f "${CURL_LOG}"
 
 ################################################################################
-# Enabled + topic set calls curl with the message
+# Enabled + configured calls curl with the message, against the Telegram API
 ################################################################################
 
 rm -f "${CURL_LOG}"
@@ -113,8 +122,16 @@ assert_true \
     grep -q "power lost" "${CURL_LOG}"
 
 assert_true \
-    "warning uses high priority" \
-    grep -q "Priority: high" "${CURL_LOG}"
+    "curl call targets the Telegram bot API with the token" \
+    grep -q "api.telegram.org/bottest-token/sendMessage" "${CURL_LOG}"
+
+assert_true \
+    "curl call carries the chat id" \
+    grep -q "chat_id=test-chat" "${CURL_LOG}"
+
+assert_true \
+    "warning uses the warning emoji" \
+    grep -q "⚠️" "${CURL_LOG}"
 
 ################################################################################
 # Metrics: a successful send increments notify_sent, a failure notify_failed
@@ -141,7 +158,7 @@ rm -f "${CURL_LOG}"
 OUTPUT="$(
     PATH="${STUB_BIN}:${PATH}" \
         PROJECT_ROOT="${PROJECT_ROOT}" \
-        NOTIFICATIONS_ENABLED=true NTFY_TOPIC=homelab-test \
+        NOTIFICATIONS_ENABLED=true TELEGRAM_BOT_TOKEN=test-token TELEGRAM_CHAT_ID=test-chat \
         NOTIFY_STUB_CURL_EXIT=1 \
         bash -c '
             set -Eeuo pipefail
