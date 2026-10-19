@@ -19,6 +19,9 @@ scrape_configs:
 
   # NUT/UPS metrics (ups.status, battery.charge, ...), served by
   # nut_exporter on RP-node2 (see templates/nut_exporter.service.example).
+  # metrics_path is /ups_metrics, not the default /metrics (reserved by
+  # this exporter for its own process metrics).
   - job_name: nut_exporter
+    metrics_path: /ups_metrics
     static_configs:
       - targets: ["10.0.0.21:9199"]

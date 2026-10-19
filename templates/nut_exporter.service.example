@@ -1,21 +1,28 @@
-# Example systemd unit for nut_exporter on RP-node2 (see CLAUDE.md topology).
-# Install at /etc/systemd/system/nut_exporter.service, adjust the binary
-# path and NUT_EXPORTER_SERVER, then:
+# Example systemd unit for DRuggeri/nut_exporter on RP-node2 (see
+# CLAUDE.md topology). This is a third-party tool, not part of NUT
+# itself — download the linux-arm64 binary from its GitHub releases
+# (github.com/DRuggeri/nut_exporter) to /usr/local/bin/nut_exporter.
+# Install this unit at /etc/systemd/system/nut_exporter.service, then:
 #   systemctl daemon-reload && systemctl enable --now nut_exporter
 #
-# Exposes standard NUT/UPS metrics (ups.status, battery.charge, etc.) on
-# :9199 for Prometheus to scrape. homelab-energy's own metrics (lib/metrics.sh)
-# are separate, written via node_exporter's textfile collector instead —
-# see templates/node_exporter_textfile.example.
+# Exposes standard NUT/UPS metrics (ups.status, battery.charge, etc.) at
+# http://<host>:9199/ups_metrics for Prometheus to scrape — NOT /metrics,
+# which this exporter reserves for its own process metrics (confirmed
+# via its own --help; --web.listen-address has no env var equivalent,
+# unlike --nut.server). See templates/prometheus.yml.example's
+# metrics_path for the matching scrape config.
+#
+# homelab-energy's own metrics (lib/metrics.sh) are separate, written
+# via node_exporter's textfile collector instead — see
+# templates/node_exporter_textfile.example.
 
 [Unit]
-Description=NUT exporter for Prometheus
+Description=NUT exporter for Prometheus (DRuggeri/nut_exporter)
 After=network.target nut-server.service
 
 [Service]
 Environment=NUT_EXPORTER_SERVER=localhost
-Environment=NUT_EXPORTER_LISTEN_ADDRESS=:9199
-ExecStart=/usr/local/bin/nut_exporter
+ExecStart=/usr/local/bin/nut_exporter --web.listen-address=:9199
 Restart=on-failure
 User=nut_exporter
 DynamicUser=yes
