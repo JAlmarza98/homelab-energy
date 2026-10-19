@@ -210,6 +210,25 @@ repo alone:
 * Grafana dashboard: `19308` ("Prometheus NUT Exporter for DRuggeri"),
   imported as-is.
 
+## Backlog (not scheduled)
+
+* **Alertmanager rules for homelab-energy's own metrics.** Nothing
+  currently visualizes or alerts on `homelab_energy_last_event_timestamp`/
+  `notifications_sent_total`/`notifications_failed_total`/
+  `shutdown_status`, even though they've been flowing into RP-node1's
+  Prometheus since v0.7.0. Proposed over a Grafana panel (passive, only
+  useful if someone remembers to look) because RP-node1 already runs
+  Alertmanager with active rules, so the marginal cost is just two more
+  rules:
+  - `homelab_energy_last_event_timestamp` stale for N days → homelab-energy
+    itself may have stopped running on RP-node2 (NUT never fires an
+    event, or the box is down) without anyone noticing.
+  - `notifications_failed_total` increasing → the Telegram channel is
+    silently broken (`notify.sh`'s fail-safe design means this never
+    surfaces any other way).
+  Not started; revisit whenever there's a natural window, independent of
+  v0.8.0/the NAS.
+
 ## v0.8.0: blocked
 
 No NAS exists in the current topology (`CLAUDE.md`'s topology table has

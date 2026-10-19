@@ -150,6 +150,12 @@ versión y qué queda pendiente de instalación manual en hardware real.
 | v0.8.0 | NAS (TrueNAS como secondary NUT nativo) y nuevos nodos | 🚫 bloqueado — no hay NAS real en la topología todavía |
 | v1.0.0 | Prueba real con corte de red, runbook documentado | ✅ runbook (`docs/runbook.md`), ⏳ la prueba física queda pendiente |
 
+**Backlog sin planificar** (ver `docs/roadmap.md` → "Backlog (not scheduled)"
+para el detalle): reglas de Alertmanager sobre las métricas propias de
+homelab-energy (`homelab_energy_last_event_timestamp` desfasado,
+`notifications_failed_total` subiendo) — ya hay Alertmanager corriendo en
+RP-node1, coste marginal bajo, no depende de v0.8.0/el NAS.
+
 ## Flujo de trabajo
 
 - Desarrollo en el Mac (`brew install shellcheck shfmt jq flock`), `make check` en local.
